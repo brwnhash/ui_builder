@@ -1,91 +1,117 @@
-import math
-from nodes import Rectange
+from .nodes import Rectange
 
 def getRowWeight(rect1,rect2):
-    return 1-(math.abs(rect1.top-rect2.top)/min([rect1.height,rect2.height]))
+    return 1-(abs(rect1.top-rect2.top)/min([rect1.height,rect2.height]))
 
 def getColumnWeight(rect1,rect2):
-    return 1-(math.abs(rect1.left-rect2.left)/min([rect1.width,rect2.width]))
+    """
+    to give more weight to column assignments we subtract 0.05 from there
+    """
+    return 1-(abs(rect1.left-rect2.left)/min([rect1.width,rect2.width]))
 
 class FNode():
-    def __init__(self,next_row_node,next_col_node,row_edge_wt,col_edge_wt,row_idx,col_idx):
-        self.next_row_node=next_row_node
-        self.next_col_node=next_col_node
+    def __init__(self,uid,next_row_node,next_col_node,row_edge_wt,col_edge_wt,row_idx,col_idx):
+        self.uid=uid
+        self.nearest_row_node=next_row_node
+        self.nearest_col_node=next_col_node
         self.row_edge_wt=row_edge_wt
         self.col_edge_wt=col_edge_wt
-        self.row_idx=row_idx 
-        self.col_idx=col_idx 
+        self.row_grp_idx=row_idx 
+        self.col_grp_idx=col_idx 
         
 
 class GroupBoxes():
     def __init__(self,rects):
         self.rects=rects
-        self.last_row_cluster_id=0
-        self.last_col_cluster_id=0
+        self.last_row_cluster_id=-1
+        self.last_col_cluster_id=-1
         self.row_cluster_map={}
         self.col_cluster_map={}
 
      
-    def getClusterId(self,idx,cmap,last_id):
-        if(cmap.get(idx,-1)==-1):
-            curr_id=last_id+1
-            cmap[idx]=last_id
-        else:
-            curr_id=cmap[idx]
+    def getClusterId(self,idx,nidx,cmap,last_id):
+        curr_id= min([cmap.get(idx,1e6),cmap.get(nidx,1e6),last_id+1])
+        cmap[idx]=curr_id
+        cmap[nidx]=curr_id
         return curr_id
-        
-    def getRowClusterId(self,row_idx):
-        self.last_row_cluster_id= self.getClusterId(row_idx,self.row_cluster_map,self.last_row_cluster_id)
+
+    def getRowClusterId(self,row_idx,nearest_idx):
+        self.last_row_cluster_id= self.getClusterId(row_idx,nearest_idx,self.row_cluster_map,self.last_row_cluster_id)
         return self.last_row_cluster_id
 
         
-    def getColumnClusterId(self,col_idx):
-        self.last_col_cluster_id= self.getClusterId(col_idx,self.col_cluster_map,self.last_col_cluster_id)
+    def getColumnClusterId(self,col_idx,nearest_idx):
+        self.last_col_cluster_id= self.getClusterId(col_idx,nearest_idx,self.col_cluster_map,self.last_col_cluster_id)
         return self.last_col_cluster_id
 
-    def assignRowColIdxs(self,rw_idx,rw_id,col_idx,cl_id):
-        self.row_cluster_map[rw_idx]=rw_id
-        self.col_cluster_map[col_idx]=cl_id
+    def assignRowColIdxs(self,node_list):
+        row_grp_wts,col_grp_wts={},{}
+        row_grp_cnt,col_grp_cnt={},{}
+        for node in node_list:
+            row_grp_wts[node.row_grp_idx]=row_grp_wts.get(node.row_grp_idx,0)+node.row_edge_wt
+            row_grp_cnt[node.row_grp_idx]=row_grp_cnt.get(node.row_grp_idx,0)+1
+            col_grp_wts[node.col_grp_idx]=col_grp_wts.get(node.col_grp_idx,0)+node.col_edge_wt
+            col_grp_cnt[node.col_grp_idx]=col_grp_cnt.get(node.col_grp_idx,0)+1
+
+        #assign more weight to bigger group..
+        for node in node_list:
+            rw_grp_idx,col_grp_idx=node.row_grp_idx,node.col_grp_idx
+            max_cnt=max(row_grp_cnt[rw_grp_idx],col_grp_cnt[col_grp_idx])
+            rval=(row_grp_wts[rw_grp_idx]/row_grp_cnt[rw_grp_idx])+0.3*(row_grp_cnt[rw_grp_idx]/max_cnt)
+            cval=col_grp_wts[col_grp_idx]/col_grp_cnt[col_grp_idx]+0.3*(col_grp_cnt[col_grp_idx]/max_cnt)
+            # invalidate row or col grp values
+            if rval+0.05>cval:
+                node.col_grp_idx=-1
+            else:
+                node.row_grp_idx=-1
+
+        return node_list
+
+
+        
 
     def getNearestElementInRowColumn(self):
         """
         use sorted rects by absolute position 
         for a box check forward in row and column directions what is nearest element.
+
         """
         node_list=[]
         rects=sorted(self.rects, key=lambda rect: ((rect.top*rect.width)+rect.left))
         total_rects=len(rects)
-        for idx in range(total_rects-1):
+        for idx in range(total_rects):
             rect=rects[idx]
 
             nearest_row_idx,nearest_col_idx=-1,-1
             best_x_diff,best_y_diff=1e5,1e5
 
-            for c_idx,rect1 in enumerate(rects[idx+1:]):
+            for c_idx,rect1 in enumerate(rects):
+                if idx==c_idx:
+                    continue
                 if Rectange.is_row_intersection(rect,rect1):
                     diff=Rectange.get_x_diff(rect,rect1)
                     if diff<best_x_diff:
                         best_x_diff=diff
-                        nearest_row_idx=idx+1+c_idx
+                        nearest_row_idx=c_idx
                 if Rectange.is_col_intersection(rect,rect1):
                     diff=Rectange.get_y_diff(rect,rect1)
                     if diff<best_y_diff:
                         best_y_diff=diff
-                        nearest_col_idx=idx+1+c_idx
+                        nearest_col_idx=c_idx
 
             rw_id,cl_id=-1,-1
             row_wt,col_wt=-1,-1
             if nearest_row_idx!=-1:
-                rw_id=self.getRowClusterId(idx)
+                rw_id=self.getRowClusterId(idx,nearest_row_idx)
                 row_wt=getRowWeight(rect,rects[nearest_row_idx])
             if nearest_col_idx!=-1:
-                cl_id=self.getColumnClusterId(idx)
+                cl_id=self.getColumnClusterId(idx,nearest_col_idx)
                 col_wt=getColumnWeight(rect,rects[nearest_col_idx])
 
-            nd=FNode(nearest_row_idx,nearest_col_idx,row_wt,col_wt,rw_id,cl_id)
-            self.assignRowColIdxs(nearest_row_idx,nearest_col_idx,rw_id,cl_id)
+            nd=FNode(rect.uid,nearest_row_idx,nearest_col_idx,row_wt,col_wt,rw_id,cl_id)
+            #self.assignRowColIdxs(nearest_row_idx,nearest_col_idx,rw_id,cl_id)
             node_list.append(nd)
-
+        self.assignRowColIdxs(node_list)
         return node_list
             
 

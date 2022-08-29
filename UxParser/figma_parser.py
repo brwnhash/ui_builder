@@ -98,6 +98,7 @@ class FigmaParser():
                         'COMPONENT':self.parseComponent,
                         'INSTANCE':self.parseComponent}
         self.comp_map={}
+        self.frame_map={}
 
     def isDerivedComponent(self,type):
         """
@@ -156,6 +157,7 @@ class FigmaParser():
         """
         Inner Frames are considered a component
         """
+        frame_name=data.name
         box=getDimProps(data)
         box['x_offset'],box['y_offset'],box['parent']=self.x_offset,self.y_offset,parent
         root_node=Frame(box)
@@ -168,7 +170,7 @@ class FigmaParser():
                 continue
             self.parseMap[element.type](element,root_node)
         if parent==None:
-            return root_node
+            self.frame_map[frame_name]=data
         else:
             self.comp_map[root_node.uid]=root_node
 
@@ -178,18 +180,17 @@ class FigmaParser():
 
         frame=data.document
         self.x_offset,self.y_offset=frame.absoluteBoundingBox.x,frame.absoluteBoundingBox.y          
-        root=self.parseFrame(frame)
-        return {root.name:root}
+        self.parseFrame(frame)
+
 
     def parseCanvas(self,data):
 
         for frame in data.children:
             self.x_offset,self.y_offset=frame.absoluteBoundingBox.x,frame.absoluteBoundingBox.y          
-            node=self.parseFrame(frame)
+            self.parseFrame(frame)
 
 
     def parsePages(self,data):
-
         for page in data.document.pages:
             self.parseCanvas(page)
 
@@ -205,7 +206,7 @@ class FigmaParser():
             if comp_id in self.comp_map:
                 continue
             self.parseNode(comp_data)
-        return
+        
 
 
 
