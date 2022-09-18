@@ -39,11 +39,29 @@ class Node(object):
         self.uid=uid
         self.min_left=min_left-x_offset
         self.min_top=min_top-y_offset
+        self.node_props={'self':{
+                        'flex':{},
+                        'margin':{}
+                        },
+                        'children':{
+                            'flex':{},
+                            'margin':{}
+                            }}
         if parent:
             self.parent.children.append(self)
 
+    def addOwnProps(self,props):
+        """
+        props is a dict of elements to be updated
+        """
+        self.node_props['self'].update(props)
 
-    def get_relative_node(self):
+    def addChildProps(self,props,key):
+        if key not in self.node_props['children']:
+            self.node_props['children'][key]={}
+        self.node_props['children'][key]=props
+    
+    def getRelativeNode(self):
         """
         cases where there is scroll maxwidth and maxheight will be bigger than viewport
         """
@@ -63,7 +81,7 @@ class Node(object):
         return Node(max_width,max_height,min_left,min_top,width,height,left,top,self.name,self.uid\
                 ,self.parent,self.shape_type,0,0)
 
-        
+
         
 
 class Frame(Node):
@@ -80,7 +98,7 @@ class Component(Node):
 
         self.parent_comp_id=parent_comp_id
         
-class Rectange(Node):
+class Rectangle(Node):
     def __init__(self,props,type='RECTANGLE'):
         Node.__init__(self,props['width'],props['height'],props['x'],props['y'],props['view_width'],\
                         props['view_height'],props['view_x'],props['view_y'],props['name'],\
@@ -141,8 +159,8 @@ class Rectange(Node):
         if len(rects)<=1:
             return RECT_INTERSECT.ROW  
 
-        row=Rectange.is_valid_orientation(rects,Rectange.is_row_intersection)
-        col=Rectange.is_valid_orientation(rects,Rectange.is_col_intersection)
+        row=Rectangle.is_valid_orientation(rects,Rectangle.is_row_intersection)
+        col=Rectangle.is_valid_orientation(rects,Rectangle.is_col_intersection)
         if row and col:
             return RECT_INTERSECT.BOTH
         if row or col:
@@ -153,6 +171,28 @@ class Rectange(Node):
 
     def abs_diff(self,other):
         return abs(self.left-other.left)+abs(self.right-other.right)
+
+
+    def top_dir(self,direction):
+        return self.top if direction==RECT_INTERSECT.ROW else self.left
+
+
+    def bottom_dir(self,direction):
+        return self.bottom if direction==RECT_INTERSECT.ROW else self.right
+
+
+    def left_dir(self,direction):
+        return self.left if direction==RECT_INTERSECT.ROW else self.top
+
+
+    def right_dir(self,direction):
+        return self.right if direction==RECT_INTERSECT.ROW else self.bottom
+
+    def width_dir(self,direction):
+        return self.width if direction==RECT_INTERSECT.ROW else self.height
+
+    def height_dir(self,direction):
+        return self.height if direction==RECT_INTERSECT.ROW else self.width
 
     def contains(self,other):
         """

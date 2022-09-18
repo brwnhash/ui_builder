@@ -2,7 +2,7 @@ from asyncio.log import logger
 import FigmaPy
 from .common import ComponentParser
 import logging
-from .nodes import Frame,Component,Rectange
+from .nodes import Frame,Component,Rectangle
 
 
 
@@ -36,7 +36,7 @@ class FigmaComponentParser(ComponentParser):
         self.x_offset=x_offset
         self.y_offset=y_offset
         self.comp_map={}
-        self.parseMap={"RECTANGLE":self.parseRectange,
+        self.parseMap={"RECTANGLE":self.parseRectangle,
         "COMPONENT":self.parseComponent,
         "INSTANCE":self.parseComponent,
         "LINE":self.parseLine,
@@ -58,9 +58,9 @@ class FigmaComponentParser(ComponentParser):
         self.parseMap[elm.type](elm,parent)
 
 
-    def parseRectange(self,data,parent):
+    def parseRectangle(self,data,parent):
         props=self.getNodeDimProps(data,parent)
-        rect=Rectange(props)
+        rect=Rectangle(props)
         for elm in rect.children:
             self.parseElement(elm,rect)
 

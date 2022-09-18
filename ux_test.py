@@ -1,5 +1,5 @@
 
-
+from UxParser.nodes import Rectangle
 
 
 
@@ -160,6 +160,7 @@ def get_2d_partial_overlap1():
     bb.append(get_fake_box_props('5',60,70,40,40))#at offset of 10
     bb.append(get_fake_box_props('6',110,65,40,40))
     return bb
+
 def get_2d_non_overlap():
     bb=[]
     bb.append(get_fake_box_props('1',10,10,40,40))
@@ -168,47 +169,85 @@ def get_2d_non_overlap():
     return bb
 
 def symmetric_1d_row_col_boxes_check():
-    from UxParser.flex_layout_generator import GroupBoxes
-    from UxParser.nodes import Rectange
+    from UxParser.flex_grid_layout_generator import GroupBoxes
+    from UxParser.nodes import Rectangle
     #col boxes
     #box_list=[get_row_boxes(),get_col_boxes(),get_non_sym_row_boxes(),get_partial_col_overlap()]
     box_list=[get_non_sym_row_boxes()]
     for idx,(box1,box2,box3) in enumerate(box_list):
-        bb1=Rectange(box1)
-        bb2=Rectange(box2)
-        bb3=Rectange(box3)
+        bb1=Rectangle(box1)
+        bb2=Rectangle(box2)
+        bb3=Rectangle(box3)
         gb=GroupBoxes([bb1,bb2,bb3])
         node_list=gb.getNearestElementInRowColumn()
         print( f'idx is {idx}')
         for node in node_list:
             print(f'nid {node.uid} row_idx {node.row_grp_idx} and col_idx {node.col_grp_idx} row wt {node.row_edge_wt} and col wt {node.col_edge_wt}')
+
+def get_var_boxes(num,wt=40,ht=40,st_margin=10,end_margin=10,mid_margin=10,dev=0,direction=0):
+    """
+    direction : 0 for row boxes ,1 for column boxes
+    st and end margin is for x and y same
+
+    """
+    bb_list=[]
+    parent=None
+    x,y=st_margin,st_margin
+    parent_width,parent_height=0,0
+    if direction==0:
+        parent_width=(wt*num)+(st_margin+end_margin)+(num-1)*mid_margin
+        parent_height=(ht*num)+(st_margin+end_margin)
+    else:
+        parent_width=(wt*num)+(st_margin+end_margin)
+        parent_height=(ht*num)+(st_margin+end_margin)+(num-1)*mid_margin
+
+    prop=get_fake_box_props('prnt',0,0,parent_width,parent_height)
+    parent=Rectangle(prop)
+    for i in range(num):
+        bb=get_fake_box_props(str(i+1),x,y,wt,ht)
+        bb['parent']=parent
+        bb_list.append(Rectangle(bb))
+        if direction==0:
+            x+=(wt+mid_margin)
         
+        else:
+            y+=(ht+mid_margin)
+    return bb_list
+
+
+
+def test_flex_justification():
+    from UxParser import FlexLayoutGenerator
+    #rects=
+    boxes=get_var_boxes(4,direction=0)
+    fl=FlexLayoutGenerator(boxes,0)
+    fl._get_justification()
+    pass
 
 def symmetric_2d_row_col_boxes_check():
-    from UxParser.flex_layout_generator import GroupBoxes
-    from UxParser.nodes import Rectange
+    from UxParser.flex_grid_layout_generator import GroupBoxes
+    from UxParser.nodes import Rectangle
 
     #box_lil=[get_2d_perfect_overlap_col(),get_2d_partial_overlap1(),get_2d_non_overlap(),get_2d_perfect_overlap_row()]
-    box_lil=[get_2d_partial_overlap1()]
+    box_lil=[get_2d_perfect_overlap_col()]
     for idx,box_list in enumerate(box_lil):
-        rect_list=[Rectange(bb) for bb in box_list]
+        rect_list=[Rectangle(bb) for bb in box_list]
         gb=GroupBoxes(rect_list)
-        node_list=gb.getNearestElementInRowColumn()
+        grps=gb.group()
         print( f'idx is {idx}')
-        for node in node_list:
-            print(f'nid  {node.uid} row_idx {node.row_grp_idx} and col_idx {node.col_grp_idx} row wt {node.row_edge_wt} and col wt {node.col_edge_wt}')
+        for grp_id,rects in grps.items():
+            names=[(rect.name,orn) for rect,orn in rects]
+            print(f'nid  {grp_id}  rect names ',names)
                
     
 
     
-
-
 def test_box_groupings():
-    from UxParser.flex_layout_generator import GroupBoxes
-    from UxParser.nodes import Rectange
+    from UxParser.flex_grid_layout_generator import GroupBoxes
+    from UxParser.nodes import Rectangle
     #test 1 equal 
 
-    rect=Rectange()
+    rect=Rectangle()
 
 
 def test_figma_pages_parser():
@@ -221,7 +260,8 @@ def test_figma_pages_parser():
     pass
 
 #symmetric_1d_row_col_boxes_check()
-symmetric_2d_row_col_boxes_check()
+#symmetric_2d_row_col_boxes_check()
+test_flex_justification()
 
 #test_figma_Canvas_parser()
 #test_figma_file_parser()
@@ -231,6 +271,7 @@ symmetric_2d_row_col_boxes_check()
 #test_flex_layout_generator()
 #dump_figma_data()
 #test_figma_reader()
+
 
 
 
