@@ -36,19 +36,21 @@ class Node(object):
         self.children=[]
         self.name=name
         self.shape_type=shape_type
-        self.uid=uid
+        self.uid=str(uid)
         self.min_left=min_left-x_offset
         self.min_top=min_top-y_offset
-        self.node_props={'self':{
-                        'flex':{},
-                        'margin':{}
-                        },
-                        'children':{
-                            'flex':{},
-                            'margin':{}
-                            }}
+        self.node_props={'self':{},
+                        'children':{}
+                        }
         if parent:
-            self.parent.children.append(self)
+            if not self.doesChildElmExist():
+                self.parent.children.append(self)
+
+    def doesChildElmExist(self):
+        for child in self.parent.children:
+            if child.uid==self.uid:
+                return True
+        return False
 
     def addOwnProps(self,props):
         """
@@ -63,13 +65,12 @@ class Node(object):
     
     def getRelativeNode(self):
         """
-        cases where there is scroll maxwidth and maxheight will be bigger than viewport
+        Node dimension w.r.t its parent node
         """
-        if self.width:
-            width=self.width/self.parent.width 
-            height=self.height/self.parent.height
-            left=(self.left-self.parent.left)/self.parent.width
-            top=(self.top-self.parent.top)/self.parent.height
+        width=self.width/self.parent.width 
+        height=self.height/self.parent.height
+        left=(self.left-self.parent.left)/self.parent.width
+        top=(self.top-self.parent.top)/self.parent.height
 
         #scaling is done w.r.t top container view port not w.r.t actual width
 
@@ -98,6 +99,34 @@ class Component(Node):
 
         self.parent_comp_id=parent_comp_id
         
+def getXMargins(rects):
+    parent=rects[0].parent
+    if parent==None:
+        return []
+    left_rect=rects[0]
+    margins=[left_rect.left-parent.left]
+    for rect in rects[1:]:
+        diff=Rectangle.get_x_diff(left_rect,rect)
+        margins.append(diff)
+        left_rect=rect
+    last_diff=parent.right-rects[-1].right
+    margins.append(last_diff)
+    return margins
+
+def getYMargins(rects):
+    parent=rects[0].parent
+    if parent==None:
+        return []
+    top_rect=rects[0]
+    margins=[top_rect.top-parent.top]
+    for rect in rects[1:]:
+        diff=Rectangle.get_y_diff(top_rect,rect)
+        margins.append(diff)
+        top_rect=rect
+    last_diff=parent.bottom-rects[-1].bottom
+    margins.append(last_diff)
+    return margins
+
 class Rectangle(Node):
     def __init__(self,props,type='RECTANGLE'):
         Node.__init__(self,props['width'],props['height'],props['x'],props['y'],props['view_width'],\
@@ -128,9 +157,9 @@ class Rectangle(Node):
 
     @staticmethod
     def get_y_diff(rect1,rect2):   
-        left_rect= rect1  if rect1.top<= rect2.top else rect2
-        right_rect= rect2 if left_rect==rect1 else rect1    
-        return right_rect.top-left_rect.bottom
+        top_rect= rect1  if rect1.top<= rect2.top else rect2
+        bottom_rect= rect2 if top_rect==rect1 else rect1    
+        return bottom_rect.top-top_rect.bottom
 
 
     @staticmethod

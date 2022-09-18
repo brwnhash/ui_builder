@@ -1,6 +1,6 @@
 from re import L
 from xml.dom.expatbuilder import parseString
-from .nodes import Rectangle,RECT_INTERSECT
+from .nodes import Rectangle,RECT_INTERSECT,getXMargins,getYMargins
 from collections import defaultdict
 import numpy as np
 from config import FLEX_CONIG
@@ -67,6 +67,14 @@ class GroupBoxes():
         return self.last_col_cluster_id
 
     def assignRowColIdxs(self,node_list):
+        """
+        1. Calcualate row and col group weights
+        2. Assign row index if row weight bigger otherwise col weight
+        3. assign row index to non groups and max_idx+1
+        """
+        max_idx=len(node_list)
+
+        #calculate row/col groups weights
         row_grp_wts,col_grp_wts={},{}
         row_grp_cnt,col_grp_cnt={},{}
         for node in node_list:
@@ -75,11 +83,15 @@ class GroupBoxes():
             col_grp_wts[node.col_grp_idx]=col_grp_wts.get(node.col_grp_idx,0)+node.col_edge_wt
             col_grp_cnt[node.col_grp_idx]=col_grp_cnt.get(node.col_grp_idx,0)+1
 
-        #assign more weight to bigger group..
+        #assign row or col group to node based on what has bigger value.
+        #assign more weight to bigger group.. (70% score to weights and 30% score to count value )
+
         node_uid_map={}
         for node in node_list:
             rw_grp_idx,col_grp_idx=node.row_grp_idx,node.col_grp_idx
             if rw_grp_idx==-1 and col_grp_idx==-1:
+                node_uid_map[node.uid]=(max_idx,RECT_INTERSECT.ROW)
+                max_idx+=1
                 continue
             max_cnt=max(row_grp_cnt[rw_grp_idx],col_grp_cnt[col_grp_idx])
             rval=(row_grp_wts[rw_grp_idx]/row_grp_cnt[rw_grp_idx])+0.3*(row_grp_cnt[rw_grp_idx]/max_cnt)
@@ -340,62 +352,62 @@ class FlexLayoutGenerator():
         self.justification,self.margin=self.getJustification()
         self.alignment=self.getAlignment()
 
-class GridCreator():
-    """
-    By default we divide rows and columns to 12 grid layout.
-    """
-    def __init__(self):
-        self.css_blocks=[]
-        self.html_block=''
-        self.container='container'
+# class GridCreator():
+#     """
+#     By default we divide rows and columns to 12 grid layout.
+#     """
+#     def __init__(self):
+#         self.css_blocks=[]
+#         self.html_block=''
+#         self.container='container'
 
-    def add_container(self,name,default_height=True,default_frame=True):
-        if default_height:
-            block=".{class_name} {{ display: grid;\n \
-                   grid-template-columns:repeat({row_div}, 1fr);\n \
-                   grid-template-rows:repeat({col_div}, 1fr);\n\
-                   height:calc(100vh - 17px);\
-                    }}"\
-                   .format(class_name=name,row_div=int(css_grid_props['num_rows']),col_div=int(css_grid_props['num_cols']))
-        else:
-           block=".{class_name} {{ display: grid;\n \
-                   grid-template-columns:repeat({row_div}, 1fr);\n \
-                   grid-template-rows:repeat({col_div}, 1fr);\
-                    }}"\
-                   .format(class_name=name,row_div=int(css_grid_props['num_rows']),col_div=int(css_grid_props['num_cols']))
-        if ENABLE_OUTLINE_BORDER:
-            frame="\n.{class_name}{{border : 1px solid blue }}\n.{class_name} > * {{border : 1px solid red }}\n".format(class_name=name) 
-            block=frame+block
-        self.css_blocks.append(block)
-        self.container=name
-
-
-    def _build_item_css(self,item):
-        block=".{class_name}{{grid-column-start: {col_start};\n \
-                grid-column-end: {col_end};\n \
-                grid-row-start: {row_start};\n \
-                grid-row-end: {row_end};}}\
-              ".format(class_name=item.name,col_start=math.ceil(item.col_start),col_end=math.ceil(item.col_end),\
-                        row_start=math.ceil(item.row_start),row_end=math.ceil(item.row_end))
-        return block
+#     def add_container(self,name,default_height=True,default_frame=True):
+#         if default_height:
+#             block=".{class_name} {{ display: grid;\n \
+#                    grid-template-columns:repeat({row_div}, 1fr);\n \
+#                    grid-template-rows:repeat({col_div}, 1fr);\n\
+#                    height:calc(100vh - 17px);\
+#                     }}"\
+#                    .format(class_name=name,row_div=int(css_grid_props['num_rows']),col_div=int(css_grid_props['num_cols']))
+#         else:
+#            block=".{class_name} {{ display: grid;\n \
+#                    grid-template-columns:repeat({row_div}, 1fr);\n \
+#                    grid-template-rows:repeat({col_div}, 1fr);\
+#                     }}"\
+#                    .format(class_name=name,row_div=int(css_grid_props['num_rows']),col_div=int(css_grid_props['num_cols']))
+#         if ENABLE_OUTLINE_BORDER:
+#             frame="\n.{class_name}{{border : 1px solid blue }}\n.{class_name} > * {{border : 1px solid red }}\n".format(class_name=name) 
+#             block=frame+block
+#         self.css_blocks.append(block)
+#         self.container=name
 
 
-    def add_items_to_grid(self,items_list):
-        for item in items_list:
-            if not item.name:
-                continue
-            block=self._build_item_css(item)
-            self.css_blocks.append(block)
-        html_block=create_html_div_layout(items_list)
-        self.html_block= add_css_class_to_div(self.container,html_block)
+#     def _build_item_css(self,item):
+#         block=".{class_name}{{grid-column-start: {col_start};\n \
+#                 grid-column-end: {col_end};\n \
+#                 grid-row-start: {row_start};\n \
+#                 grid-row-end: {row_end};}}\
+#               ".format(class_name=item.name,col_start=math.ceil(item.col_start),col_end=math.ceil(item.col_end),\
+#                         row_start=math.ceil(item.row_start),row_end=math.ceil(item.row_end))
+#         return block
 
-    @property       
-    def css(self):
-        return " \r\n".join(self.css_blocks)
 
-    @property
-    def html(self):
-        return self.html_block
+#     def add_items_to_grid(self,items_list):
+#         for item in items_list:
+#             if not item.name:
+#                 continue
+#             block=self._build_item_css(item)
+#             self.css_blocks.append(block)
+#         html_block=create_html_div_layout(items_list)
+#         self.html_block= add_css_class_to_div(self.container,html_block)
+
+#     @property       
+#     def css(self):
+#         return " \r\n".join(self.css_blocks)
+
+#     @property
+#     def html(self):
+#         return self.html_block
                         
 
 
@@ -409,51 +421,71 @@ class GridCreator():
         row start move to left floor  ; row end move to ceil
         indexing starts from 1 so add 1 to final results.
         """
-        rnd=lambda val:int(math.floor(1+val))
-        rel_rect=rect.getRelativeNode()
-        col_start=rnd(rel_rect.left/self.col_div)
-        row_start=rnd(rel_rect.top/self.row_div)
-        col_span=rnd((rel_rect.left+rel_rect.width)/self.col_div)
-        row_span=rnd((rel_rect.top+rel_rect.height)/self.row_div)
+        rnd=lambda val:int(math.floor(val)+1)
+        col_start=rnd(rect.left/self.col_div)
+        row_start=rnd(rect.top/self.row_div)
+        col_span=rnd((rect.left+rect.width)/self.col_div)
+        row_span=rnd((rect.top+rect.height)/self.row_div)
         
         return {'grid-row-start':row_start,'grid-row-end':row_span,'grid-column-start':col_start,'grid-column-end':col_span}
 
-    def getBestMatch(self,min_val,targets,max_error=2):
+    def getBestMatch(self,max_val,targets,max_error=0):
         best_match,min_err=1,1e5
-        for i in range(min_val,101,1):
+        for i in range(1,max_val+1,1):
+            if (max_val%i)>max_error:
+                continue
             err_list=[]
             for target in targets:              
                 err_list.append(target%i)
             err=max(err_list)
-            if err<min_err:
+            if err<=min_err:
                 min_err=err
                 best_match=i
-            if min_err==0:
-                break
         if min_err<max_error:
             best_match=-1 
         return best_match
 
-
-    def calculateNumRowsCols(self,rects):
+    def calculateNumCols(self,rects):
         """
+        Factor which can divide all widths including parent.(GCD)
+        consider margins y also .as they also part of it when considering best factor
         calculate biggest size with 0 error and minimum with in desired limit.
         we assume grid design and minimum grid 1
         """
-        min_wt=min(rects,key=lambda rect:rect.width)
-        min_ht=min(rects,key=lambda rect:rect.height)
-        max_row_div=self.getBestMatch(min_wt,[rect.width for rect in rects])
-        max_col_div=self.getBestMatch(min_ht,[rect.height for rect in rects])
+        parent=rects[0].parent
+        min_wt=min(rects,key=lambda rect:rect.width).width
+
+        widths=[rect.width for rect in rects]
+        xmargins=getXMargins(rects)
+        widths.extend(xmargins)
+        widths.append(parent.width)
+        max_col_div=self.getBestMatch(min_wt,widths)
+ 
+        self.col_div=parent.width/max_col_div
+
+    def calculateNumRows(self,rects):
+        """
+        Factor which can divide all widths including parent.(GCD)
+        consider margins of x  also .as they also part of it when considering best factor
+        calculate biggest size with 0 error and minimum with in desired limit.
+        we assume grid design and minimum grid 1
+        """
+        parent=rects[0].parent
+
+        min_ht=min(rects,key=lambda rect:rect.height).height
+        heights=[rect.height for rect in rects]
+        heights.append(parent.height)
+        ymargins=getYMargins(rects)
+        heights.extend(ymargins)
+        max_row_div=self.getBestMatch(min_ht,heights)   
+        self.row_div=parent.height/max_row_div
 
 
-        # self.row_div=1/num_rows
-        # self.col_div=1/num_cols
-        pass
-
-    def create_css_grid(self,rect_list):
-
-
-        css_rects=[]
+    def extractGridProps(self,rect_list):
+        gb=GroupBoxes(rect_list)
+        grps=gb.group()
+        self.calculateNumCols(rect_list)
+        self.calculateNumRows(rect_list)
         for rect in rect_list:
             elm_props=self.getElmProps(rect)
             rect.addOwnProps(elm_props,'item_grid')
