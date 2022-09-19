@@ -90,7 +90,7 @@ class GroupBoxes():
         for node in node_list:
             rw_grp_idx,col_grp_idx=node.row_grp_idx,node.col_grp_idx
             if rw_grp_idx==-1 and col_grp_idx==-1:
-                node_uid_map[node.uid]=(max_idx,RECT_INTERSECT.ROW)
+                node_uid_map[node.uid]=(max_idx,self.grouping_type)
                 max_idx+=1
                 continue
             max_cnt=max(row_grp_cnt[rw_grp_idx],col_grp_cnt[col_grp_idx])
@@ -445,25 +445,29 @@ class GridCreator():
             best_match=-1 
         return best_match
 
-    def calculateNumCols(self,rects):
+    def calculateNumCols(self,rects,grps):
         """
         Factor which can divide all widths including parent.(GCD)
         consider margins y also .as they also part of it when considering best factor
         calculate biggest size with 0 error and minimum with in desired limit.
+        margins can be consider in for blocks which are row intersecting 
         we assume grid design and minimum grid 1
         """
         parent=rects[0].parent
         min_wt=min(rects,key=lambda rect:rect.width).width
 
         widths=[rect.width for rect in rects]
-        xmargins=getXMargins(rects)
-        widths.extend(xmargins)
         widths.append(parent.width)
+        for _,elms in grps.items():
+            grp_rects=[rr for rr,orn in elms]
+            xmargins=getXMargins(grp_rects)
+            widths.extend(xmargins)
+        
         max_col_div=self.getBestMatch(min_wt,widths)
  
         self.col_div=parent.width/max_col_div
 
-    def calculateNumRows(self,rects):
+    def calculateNumRows(self,rects,grps):
         """
         Factor which can divide all widths including parent.(GCD)
         consider margins of x  also .as they also part of it when considering best factor
@@ -475,17 +479,26 @@ class GridCreator():
         min_ht=min(rects,key=lambda rect:rect.height).height
         heights=[rect.height for rect in rects]
         heights.append(parent.height)
-        ymargins=getYMargins(rects)
-        heights.extend(ymargins)
+        for _,elms in grps.items():
+            grp_rects=[rr for rr,orn in elms]
+            ymargins=getYMargins(grp_rects)
+            heights.extend(ymargins)
+
         max_row_div=self.getBestMatch(min_ht,heights)   
         self.row_div=parent.height/max_row_div
 
 
     def extractGridProps(self,rect_list):
-        gb=GroupBoxes(rect_list)
+        #group row wise
+        gb=GroupBoxes(rect_list,GroupBoxes.ROW_ONLY)
         grps=gb.group()
-        self.calculateNumCols(rect_list)
-        self.calculateNumRows(rect_list)
+        #get groups and add that to get num rows and cols.
+        self.calculateNumCols(rect_list,grps)
+
+        #group column wise
+        gb=GroupBoxes(rect_list,GroupBoxes.COL_ONLY)
+        grps=gb.group()
+        self.calculateNumRows(rect_list,grps)
         for rect in rect_list:
             elm_props=self.getElmProps(rect)
             rect.addOwnProps(elm_props,'item_grid')

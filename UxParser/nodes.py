@@ -39,7 +39,7 @@ class Node(object):
         self.uid=str(uid)
         self.min_left=min_left-x_offset
         self.min_top=min_top-y_offset
-        self.node_props={'self':{},
+        self.node_props={'own':{},
                         'children':{}
                         }
         if parent:
@@ -52,11 +52,13 @@ class Node(object):
                 return True
         return False
 
-    def addOwnProps(self,props):
+    def addOwnProps(self,props,key):
         """
         props is a dict of elements to be updated
         """
-        self.node_props['self'].update(props)
+        if key not in self.node_props['own']:
+            self.node_props['own'][key]={}
+        self.node_props['own'][key].update(props)
 
     def addChildProps(self,props,key):
         if key not in self.node_props['children']:
