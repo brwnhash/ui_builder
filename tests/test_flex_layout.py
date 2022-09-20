@@ -1,5 +1,10 @@
 
 from .common import get_fake_box_props,get_var_boxes
+from UxParser import FlexLayoutGenerator1D
+from UxParser.nodes import Rectangle
+from UxParser.flex_grid_layout_generator import GroupBoxes
+    
+
 
 def get_col_boxes():
     box1=get_fake_box_props('1',10,10,40,40)
@@ -65,16 +70,24 @@ def get_2d_non_overlap():
 
 
 def test_flex_justification():
-    from UxParser import FlexLayoutGenerator
-    #rects=
+    
     boxes=get_var_boxes(4,direction=0)
     fl=FlexLayoutGenerator(boxes,0)
     fl._get_justification()
-    pass
+    
+
+def test_flex_layout_generator():
+    #boxes=get_var_boxes(4,direction=0)
+    box_list=get_2d_perfect_overlap_row()
+    rect_list=[Rectangle(bb) for bb in box_list]
+    gb=GroupBoxes(rect_list)
+    grps=gb.group()
+    for grp_id,grp_rects in grps.items():
+        rect_list=[rect for rect,orn in grp_rects]
+        fl=FlexLayoutGenerator(rect_list,grp_rects[0][1])
+        fl.detect_patterns()       
 
 def symmetric_2d_row_col_boxes_check():
-    from UxParser.flex_grid_layout_generator import GroupBoxes
-    from UxParser.nodes import Rectangle
 
     #box_lil=[get_2d_perfect_overlap_col(),get_2d_partial_overlap1(),get_2d_non_overlap(),get_2d_perfect_overlap_row()]
     box_lil=[get_2d_perfect_overlap_col()]

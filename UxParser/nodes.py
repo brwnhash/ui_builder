@@ -2,7 +2,7 @@
 
 
 
-class RECT_INTERSECT():
+class RECT_ORIENT():
     ROW=0
     COLUMN=1
     BOTH=2
@@ -39,9 +39,8 @@ class Node(object):
         self.uid=str(uid)
         self.min_left=min_left-x_offset
         self.min_top=min_top-y_offset
-        self.node_props={'own':{},
-                        'children':{}
-                        }
+        self.node_props={}
+                        
         if parent:
             if not self.doesChildElmExist():
                 self.parent.children.append(self)
@@ -52,18 +51,11 @@ class Node(object):
                 return True
         return False
 
-    def addOwnProps(self,props,key):
+    def addProps(self,props,key):
         """
         props is a dict of elements to be updated
         """
-        if key not in self.node_props['own']:
-            self.node_props['own'][key]={}
-        self.node_props['own'][key].update(props)
-
-    def addChildProps(self,props,key):
-        if key not in self.node_props['children']:
-            self.node_props['children'][key]={}
-        self.node_props['children'][key]=props
+        self.node_props[key]=props
     
     def getRelativeNode(self):
         """
@@ -188,15 +180,15 @@ class Rectangle(Node):
         """
         
         if len(rects)<=1:
-            return RECT_INTERSECT.ROW  
+            return RECT_ORIENT.ROW  
 
         row=Rectangle.is_valid_orientation(rects,Rectangle.is_row_intersection)
         col=Rectangle.is_valid_orientation(rects,Rectangle.is_col_intersection)
         if row and col:
-            return RECT_INTERSECT.BOTH
+            return RECT_ORIENT.BOTH
         if row or col:
-            return RECT_INTERSECT.ROW if row else RECT_INTERSECT.COLUMN
-        return RECT_INTERSECT.NONE
+            return RECT_ORIENT.ROW if row else RECT_ORIENT.COLUMN
+        return RECT_ORIENT.NONE
 
            
 
@@ -205,25 +197,25 @@ class Rectangle(Node):
 
 
     def top_dir(self,direction):
-        return self.top if direction==RECT_INTERSECT.ROW else self.left
+        return self.top if direction==RECT_ORIENT.ROW else self.left
 
 
     def bottom_dir(self,direction):
-        return self.bottom if direction==RECT_INTERSECT.ROW else self.right
+        return self.bottom if direction==RECT_ORIENT.ROW else self.right
 
 
     def left_dir(self,direction):
-        return self.left if direction==RECT_INTERSECT.ROW else self.top
+        return self.left if direction==RECT_ORIENT.ROW else self.top
 
 
     def right_dir(self,direction):
-        return self.right if direction==RECT_INTERSECT.ROW else self.bottom
+        return self.right if direction==RECT_ORIENT.ROW else self.bottom
 
     def width_dir(self,direction):
-        return self.width if direction==RECT_INTERSECT.ROW else self.height
+        return self.width if direction==RECT_ORIENT.ROW else self.height
 
     def height_dir(self,direction):
-        return self.height if direction==RECT_INTERSECT.ROW else self.width
+        return self.height if direction==RECT_ORIENT.ROW else self.width
 
     def contains(self,other):
         """

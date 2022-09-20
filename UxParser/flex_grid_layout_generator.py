@@ -1,6 +1,6 @@
 from re import L
 from xml.dom.expatbuilder import parseString
-from .nodes import Rectangle,RECT_INTERSECT,getXMargins,getYMargins
+from .nodes import Rectangle,RECT_ORIENT,getXMargins,getYMargins
 from collections import defaultdict
 import numpy as np
 from config import FLEX_CONIG
@@ -29,9 +29,9 @@ class FNode():
 
 
 class GroupBoxes():
-    ROW_COL=0
-    ROW_ONLY=1
-    COL_ONLY=2  
+    ROW_COL=RECT_ORIENT.BOTH
+    ROW_ONLY=RECT_ORIENT.ROW
+    COL_ONLY=RECT_ORIENT.COLUMN 
     def __init__(self,rects,grouping_type=ROW_COL,row_extra_wt=0.05,col_extra_wt=0):
         self.rects=rects
         self.grouping_type=grouping_type
@@ -101,10 +101,10 @@ class GroupBoxes():
             cval+=self.col_extra_wt
             if rval>cval:
                 node.col_grp_idx=-1
-                node_uid_map[node.uid]=(node.row_grp_idx,RECT_INTERSECT.ROW)
+                node_uid_map[node.uid]=(node.row_grp_idx,RECT_ORIENT.ROW)
             else:
                 node.row_grp_idx=-1
-                node_uid_map[node.uid]=(node.col_grp_idx,RECT_INTERSECT.COL)
+                node_uid_map[node.uid]=(node.col_grp_idx,RECT_ORIENT.COL)
             
         return node_uid_map
 
@@ -166,8 +166,7 @@ class GroupBoxes():
 
 
 
-
-class FlexLayoutGenerator():
+class FlexLayoutGenerator1D():
     def __init__(self,rects,orientation):
         """
         It deals with 1D layout only . nowrap property is set..
@@ -241,7 +240,7 @@ class FlexLayoutGenerator():
         right_margin,left_margin,top_margin,bottom_margin=0,0,0,0
         for rect in all_rects[1:]:
             left_rect=all_rects[idx-1]
-            if orientation==RECT_INTERSECT.ROW: #for row orientation
+            if orientation==RECT_ORIENT.ROW: #for row orientation
                 if idx==1:
                     left_margin=rect.left-left_rect.left  # first diff w.r.t parent
                 else:
@@ -295,7 +294,7 @@ class FlexLayoutGenerator():
 
         rects=self.rects
         #left to right sorted rects
-        sorted_rects = sorted(rects, key=lambda rect: rect.left) if self.orientation==RECT_INTERSECT.ROW else sorted(rects,key=lambda rect: rect.top)
+        sorted_rects = sorted(rects, key=lambda rect: rect.left) if self.orientation==RECT_ORIENT.ROW else sorted(rects,key=lambda rect: rect.top)
   
         self._get_rect_margins(self.parent_rect,sorted_rects,self.orientation)
         #primary rect to first distance
@@ -352,63 +351,17 @@ class FlexLayoutGenerator():
         self.justification,self.margin=self.getJustification()
         self.alignment=self.getAlignment()
 
-# class GridCreator():
-#     """
-#     By default we divide rows and columns to 12 grid layout.
-#     """
-#     def __init__(self):
-#         self.css_blocks=[]
-#         self.html_block=''
-#         self.container='container'
-
-#     def add_container(self,name,default_height=True,default_frame=True):
-#         if default_height:
-#             block=".{class_name} {{ display: grid;\n \
-#                    grid-template-columns:repeat({row_div}, 1fr);\n \
-#                    grid-template-rows:repeat({col_div}, 1fr);\n\
-#                    height:calc(100vh - 17px);\
-#                     }}"\
-#                    .format(class_name=name,row_div=int(css_grid_props['num_rows']),col_div=int(css_grid_props['num_cols']))
-#         else:
-#            block=".{class_name} {{ display: grid;\n \
-#                    grid-template-columns:repeat({row_div}, 1fr);\n \
-#                    grid-template-rows:repeat({col_div}, 1fr);\
-#                     }}"\
-#                    .format(class_name=name,row_div=int(css_grid_props['num_rows']),col_div=int(css_grid_props['num_cols']))
-#         if ENABLE_OUTLINE_BORDER:
-#             frame="\n.{class_name}{{border : 1px solid blue }}\n.{class_name} > * {{border : 1px solid red }}\n".format(class_name=name) 
-#             block=frame+block
-#         self.css_blocks.append(block)
-#         self.container=name
-
-
-#     def _build_item_css(self,item):
-#         block=".{class_name}{{grid-column-start: {col_start};\n \
-#                 grid-column-end: {col_end};\n \
-#                 grid-row-start: {row_start};\n \
-#                 grid-row-end: {row_end};}}\
-#               ".format(class_name=item.name,col_start=math.ceil(item.col_start),col_end=math.ceil(item.col_end),\
-#                         row_start=math.ceil(item.row_start),row_end=math.ceil(item.row_end))
-#         return block
-
-
-#     def add_items_to_grid(self,items_list):
-#         for item in items_list:
-#             if not item.name:
-#                 continue
-#             block=self._build_item_css(item)
-#             self.css_blocks.append(block)
-#         html_block=create_html_div_layout(items_list)
-#         self.html_block= add_css_class_to_div(self.container,html_block)
-
-#     @property       
-#     def css(self):
-#         return " \r\n".join(self.css_blocks)
-
-#     @property
-#     def html(self):
-#         return self.html_block
-                        
+class FlexLayoutGenerator2D():
+    def __init__(self):
+        pass
+    def detectPatterns(self,rect_list):
+        gb=GroupBoxes(rect_list)
+        grps=gb.group()
+        for grp_id,grp_rects in grps.items():
+            rect_list=[rect for rect,orn in grp_rects]
+            orientation=grp_rects[0][1]
+            fl=FlexLayoutGenerator1D(rect_list,orientation)
+            fl.detect_patterns()
 
 
 class GridCreator():
@@ -465,7 +418,7 @@ class GridCreator():
         
         max_col_div=self.getBestMatch(min_wt,widths)
  
-        self.col_div=parent.width/max_col_div
+        self.col_div=int(parent.width/max_col_div)
 
     def calculateNumRows(self,rects,grps):
         """
@@ -485,8 +438,16 @@ class GridCreator():
             heights.extend(ymargins)
 
         max_row_div=self.getBestMatch(min_ht,heights)   
-        self.row_div=parent.height/max_row_div
+        self.row_div=int(parent.height/max_row_div)
 
+    def addParentProps(self,rect):
+        parent=rect.parent
+        if parent==None:
+            raise Exception('Parent is needed for rect list to assign props')
+        props={ 'display': 'grid',
+                'grid-template-columns':'repeat({row_div}, 1fr)'.format(row_div=self.row_div),
+                'grid-template-rows':'repeat({col_div}, 1fr)'.format(col_div=self.col_div)}
+        parent.addProps(props,'grid_container')
 
     def extractGridProps(self,rect_list):
         #group row wise
@@ -499,7 +460,10 @@ class GridCreator():
         gb=GroupBoxes(rect_list,GroupBoxes.COL_ONLY)
         grps=gb.group()
         self.calculateNumRows(rect_list,grps)
+        #add parent prop
+        self.addParentProps(rect_list[0])
         for rect in rect_list:
             elm_props=self.getElmProps(rect)
-            rect.addOwnProps(elm_props,'item_grid')
+            rect.addProps(elm_props,'grid_item')
+        return rect_list
     

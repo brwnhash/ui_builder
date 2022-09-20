@@ -1,7 +1,7 @@
 
 from tests import *
 
-test_css_grid()
+#test_css_grid()
 #symmetric_1d_row_col_boxes_check()
 #symmetric_2d_row_col_boxes_check()
 #test_flex_justification()
@@ -11,7 +11,7 @@ test_css_grid()
 #test_figma_pages_parser()
 #get_figma_data_dump()
 #test_figma_parser()
-#test_flex_layout_generator()
+test_flex_layout_generator()
 #dump_figma_data()
 #test_figma_reader()
 
