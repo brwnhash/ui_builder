@@ -10,8 +10,8 @@ from tests import *
 #test_figma_file_parser()
 #test_figma_pages_parser()
 #get_figma_data_dump()
-#test_figma_parser()
-test_flex_layout_generator()
+test_figma_parser()
+#test_flex_layout_generator()
 #dump_figma_data()
 #test_figma_reader()
 

@@ -1,6 +1,6 @@
 
 from .common import get_fake_box_props,get_var_boxes
-from UxParser import FlexLayoutGenerator1D
+from UxParser import FlexLayoutGenerator1D,FlexLayoutGenerator2D
 from UxParser.nodes import Rectangle
 from UxParser.flex_grid_layout_generator import GroupBoxes
     
@@ -38,17 +38,33 @@ def get_2d_perfect_overlap_col():
     bb.append(get_fake_box_props('4',60,10,40,40))
     bb.append(get_fake_box_props('5',60,60,40,40))#at offset of 10
     bb.append(get_fake_box_props('6',60,110,40,40))
-    return bb
+    x,y=bb[0]['x']-10,bb[0]['y']-10
+    max_wt=max(bb,lambda v:v['width'])
+    max_ht=max(bb,lambda v:v['height'])
+    wt,ht=max_wt+10,max_ht+10
+    pp=get_fake_box_props('0',x,y,wt,ht)
+    return bb,pp
 
 def get_2d_perfect_overlap_row():
     bb=[]
+    
     bb.append(get_fake_box_props('1',10,10,40,40))
     bb.append(get_fake_box_props('2',10,60,40,40)) #at offset of 10
     bb.append(get_fake_box_props('3',60,10,40,40))
     bb.append(get_fake_box_props('4',60,60,40,40))
     bb.append(get_fake_box_props('5',110,10,40,40))#at offset of 10
     bb.append(get_fake_box_props('6',110,60,40,40))
-    return bb
+
+    min_wt_rect=min(bb,key=lambda v:v['x'])
+    min_ht_rect=min(bb,key=lambda v:v['y'])
+    x,y=min_wt_rect['x']-10,min_ht_rect['y']-10
+
+    max_wt_rect=max(bb,key=lambda v:v['x'])
+    max_ht_rect=max(bb,key=lambda v:v['y'])
+    wt=max_wt_rect['x']+max_wt_rect['width']+10
+    ht=max_ht_rect['y']+max_ht_rect['height']+10
+    pp=get_fake_box_props('0',x,y,wt,ht)
+    return bb,pp
 
 def get_2d_partial_overlap1():
     bb=[]
@@ -72,20 +88,17 @@ def get_2d_non_overlap():
 def test_flex_justification():
     
     boxes=get_var_boxes(4,direction=0)
-    fl=FlexLayoutGenerator(boxes,0)
+    fl=FlexLayoutGenerator1D(boxes,0)
     fl._get_justification()
     
 
 def test_flex_layout_generator():
     #boxes=get_var_boxes(4,direction=0)
-    box_list=get_2d_perfect_overlap_row()
-    rect_list=[Rectangle(bb) for bb in box_list]
-    gb=GroupBoxes(rect_list)
-    grps=gb.group()
-    for grp_id,grp_rects in grps.items():
-        rect_list=[rect for rect,orn in grp_rects]
-        fl=FlexLayoutGenerator(rect_list,grp_rects[0][1])
-        fl.detect_patterns()       
+    box_list,pp=get_2d_perfect_overlap_row()
+    parent=Rectangle(pp)
+    rect_list=[Rectangle(bb,parent) for bb in box_list]
+    fl=FlexLayoutGenerator2D()
+    fl.detectPatterns(rect_list)
 
 def symmetric_2d_row_col_boxes_check():
 

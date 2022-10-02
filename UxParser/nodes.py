@@ -55,7 +55,9 @@ class Node(object):
         """
         props is a dict of elements to be updated
         """
-        self.node_props[key]=props
+        if key not in self.node_props:
+            self.node_props[key]={}
+        self.node_props[key].update(props)
     
     def getRelativeNode(self):
         """
@@ -80,16 +82,16 @@ class Node(object):
         
 
 class Frame(Node):
-    def __init__(self,props,type='FRAME'):
+    def __init__(self,props,parent=None,type='FRAME'):
         Node.__init__(self,props['width'],props['height'],props['x'],props['y'],props['view_width'],\
                         props['view_height'],props['view_x'],props['view_y'],props['name'],\
-                        props['uid'],props['parent'],type,props['x_offset'],props['y_offset'])
+                        props['uid'],parent,type,props['x_offset'],props['y_offset'])
     
 class Component(Node):
-    def __init__(self,props,type='COMPONENT',parent_comp_id=None):
+    def __init__(self,props,parent=None,type='COMPONENT',parent_comp_id=None):
         Node.__init__(self,props['width'],props['height'],props['x'],props['y'],props['view_width'],\
                         props['view_height'],props['view_x'],props['view_y'],props['name'],\
-                        props['uid'],props['parent'],type,props['x_offset'],props['y_offset'])
+                        props['uid'],parent,type,props['x_offset'],props['y_offset'])
 
         self.parent_comp_id=parent_comp_id
         
@@ -122,10 +124,10 @@ def getYMargins(rects):
     return margins
 
 class Rectangle(Node):
-    def __init__(self,props,type='RECTANGLE'):
+    def __init__(self,props,parent=None,type='RECTANGLE'):
         Node.__init__(self,props['width'],props['height'],props['x'],props['y'],props['view_width'],\
                         props['view_height'],props['view_x'],props['view_y'],props['name'],\
-                        props['uid'],props['parent'],type,props['x_offset'],props['y_offset'])
+                        props['uid'],parent,type,props['x_offset'],props['y_offset'])
     @staticmethod
     def is_row_intersection(rect1,rect2):
         left_rect= rect1  if rect1.top<= rect2.top else rect2

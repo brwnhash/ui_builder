@@ -38,13 +38,12 @@ def dump_figma_data():
         json.dump(data,fp)
 
 def get_figma_data_dump():
-    from  UxParser import FigmaParser,FigmaParseType
+    from  UxParser import FigmaParser
     import joblib
     token = 'figd_6OS0WhuNuZw79Nkmolp_efuVsvxJ3AVVtUNCziVy' 
-    file_key = 'jJPaQGoE6vIq1bxJyePiij'
-    page_id='56%3A108'
+    file_key = 'Y7B9m6drXsQh8P6XtAa4GB'
+    page_id='1%3A2'
     fp=FigmaParser(token,file_key)
-    #data=fp.fetch()
     data=fp.fetchAll(page_id)
     out_file='/home/admin1/data/ui_builder/file_data.json'
     joblib.dump(data,out_file)
@@ -65,7 +64,7 @@ def test_figma_file_parser():
     token = 'figd_6OS0WhuNuZw79Nkmolp_efuVsvxJ3AVVtUNCziVy'
     out_file='/home/admin1/data/figma/sample_comp.json'
     data=None
-    file_key = 'jJPaQGoE6vIq1bxJyePiij'
+    file_key = 'Y7B9m6drXsQh8P6XtAa4GB'
     page_ids=['56%3A108']
     with open(out_file,'r') as fp:
         data=json.load(fp)

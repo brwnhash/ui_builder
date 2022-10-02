@@ -75,7 +75,7 @@ class FigmaComponentParser(ComponentParser):
     def parseComponent(self,data,parent):
         props=self.getNodeDimProps(data,parent)
         comp_id= data.componentId if hasattr(data,'componentId') else None
-        comp=Component(props,data.type,comp_id)
+        comp=Component(props,parent,data.type,comp_id)
         self.comp_map[comp.uid]=comp
         for elm in data.children:
             self.parseElement(elm,comp)
@@ -83,9 +83,19 @@ class FigmaComponentParser(ComponentParser):
         
 
 
-    
+class UNode:
+    def __init__(self,elm):
+        self.uid=elm.id
+        self.children=[]
 
 class FigmaParser():
+    """
+    Parser has data fetcher and parser 
+    store component map which is per page .
+    compset map is for overall projects
+    page map stores all components in page and there structure 
+
+    """
 
     def __init__(self,token,key):
         """
@@ -98,7 +108,9 @@ class FigmaParser():
                         'COMPONENT':self.parseComponent,
                         'INSTANCE':self.parseComponent}
         self.comp_map={}
-        self.frame_map={}
+        self.compset_map={}
+        self.page_map={}
+        self.interaction_map={}
 
     def isDerivedComponent(self,type):
         """
@@ -130,19 +142,24 @@ class FigmaParser():
         """
         we do single component fetching ,this can be improved.
         """
-        compset_map={}
         for uid,_ in data.componentSets.items():
             cid=uid.replace(':','%3A')
+            if cid in self.compset_map:
+                logger.info(f'skipping component fetch of {cid} as it already exists ')
+                continue
             comp_set=self.fetch(cid)
-            compset_map[uid]=comp_set
+            self.compset_map[uid]=comp_set
 
-        return compset_map
 
     def fetchAll(self,page_id=None):
+        """
+        Fetch page and component info both
+        """
         page_data=self.fetch(page_id)
         compsets=self.fetchComponentSets(page_data)
         type=FigmaParseType.PAGE if page_id else FigmaParseType.PROJECT
         return {'doc':page_data,'type':type,'compsets':compsets}
+        
         
     def parseComponent(self,elm,root):
         if elm.id in self.comp_map:
@@ -157,6 +174,7 @@ class FigmaParser():
         """
         Inner Frames are considered a component
         """
+        
         frame_name=data.name
         box=getDimProps(data)
         box['x_offset'],box['y_offset'],box['parent']=self.x_offset,self.y_offset,parent
@@ -170,29 +188,43 @@ class FigmaParser():
                 continue
             self.parseMap[element.type](element,root_node)
         if parent==None:
-            self.frame_map[frame_name]=data
+            return self.getPageStructure(data)
         else:
             self.comp_map[root_node.uid]=root_node
 
+    def getPageStructure(self,parent):
+        """
+        DOM structure with only ids
+        """
+        node=UNode(parent)
+        if not hasattr(parent,'children'):
+            return node
+        for elm in parent.children:
+            cnode=self.getPageStructure(elm)
+            node.children.append(cnode)
+        return node
 
 
     def parseNode(self,data):
-
+        
         frame=data.document
         self.x_offset,self.y_offset=frame.absoluteBoundingBox.x,frame.absoluteBoundingBox.y          
-        self.parseFrame(frame)
+        fnodes=self.parseFrame(frame)
+        self.page_map[frame.name]=fnodes
 
 
     def parseCanvas(self,data):
-
+        canvas={}
         for frame in data.children:
             self.x_offset,self.y_offset=frame.absoluteBoundingBox.x,frame.absoluteBoundingBox.y          
-            self.parseFrame(frame)
+            fnodes=self.parseFrame(frame)
+            canvas[frame.name]=fnodes
+        return canvas
 
 
     def parsePages(self,data):
         for page in data.document.pages:
-            self.parseCanvas(page)
+            self.page_map[page.name] =self.parseCanvas(page)
 
     def parse(self,data):
 
@@ -202,6 +234,7 @@ class FigmaParser():
             self.parseNode(doc)
         elif type==FigmaParseType.PROJECT:
             self.parsePages(doc)
+        compsets={} if not compsets else compsets
         for comp_id,comp_data in compsets.items():
             if comp_id in self.comp_map:
                 continue

@@ -206,7 +206,7 @@ class FlexLayoutGenerator1D():
             if top_margin<=0 and bottom_margin<=0:
                 alignment='stretch' 
             else:
-                if div>=1-FLEX_CONIG.margin_dev and div<=1+FLEX_CONIG.margin_dev:
+                if div>=1-FLEX_CONIG.MARGIN_DEVIATION and div<=1+FLEX_CONIG.MARGIN_DEVIATION:
                     alignment='center'
                 else:
                     if top_margin_bigger:
@@ -219,10 +219,10 @@ class FlexLayoutGenerator1D():
             if rect_props[0]!=prop:
                 all_same_prop=False
         if all_same_prop:
-            self.parent_rect.addChildProps({'alignment':alignment},'flex')
+            self.parent_rect.addProps({'align-items':alignment},'flex')
         else:
             for rect in self.rects:
-                rect.addOwnProps({'alignment':alignment},'flex')
+                rect.addProps({'align-self':alignment},'flex')
         
         
            
@@ -237,7 +237,7 @@ class FlexLayoutGenerator1D():
         all_rects=[parent_rect]
         all_rects.extend(rects)
         last_idx=len(all_rects)-1
-        right_margin,left_margin,top_margin,bottom_margin=0,0,0,0
+        right_margin,left_margin,top_margin,bottom_margin=-1,-1,-1,-1
         for rect in all_rects[1:]:
             left_rect=all_rects[idx-1]
             if orientation==RECT_ORIENT.ROW: #for row orientation
@@ -258,7 +258,7 @@ class FlexLayoutGenerator1D():
                     top_margin=rect.top-left_rect.bottom
                 if idx==last_idx:
                    bottom_margin=parent_rect.bottom-rect.bottom
-            rect.addOwnProps({'left':left_margin,'top':top_margin,'right':right_margin,'bottom':bottom_margin},'margin')         
+            rect.addProps({'left':left_margin,'top':top_margin,'right':right_margin,'bottom':bottom_margin},'margin')         
             idx+=1
         
 
@@ -274,7 +274,7 @@ class FlexLayoutGenerator1D():
             diff_list.append(middle_margin)
         norm_diff=np.array(diff_list)/np.max(diff_list)
         val=np.std(norm_diff)
-        if val<FLEX_CONIG['margin_dev']:
+        if val<FLEX_CONIG.MARGIN_DEVIATION:
             return True,float(np.mean(diff_list))
         return False,-1
 
@@ -318,10 +318,10 @@ class FlexLayoutGenerator1D():
         feature={'mid2l':mid2l,'mid2r':mid2r,'lr':lr_margin_diff,'mid':mid_valid,'lmid':lmid_margin_diff,'rmid':rmid_margin_diff}
         justification,score=self.justification_model.predict(feature)
         if score>0.9:
-            parent_rect.addChildFlexProps({'justification':justification},'flex')
+            parent_rect.addProps({'justification':justification},'flex')
         else:
-            print(f'justification score is less for {parent_rect.name} ',score)
-        return justification
+            print(f'We couldnt assing any justification ,score is less for {parent_rect.name} ',score)
+
 
 
   
@@ -330,7 +330,8 @@ class FlexLayoutGenerator1D():
         grow,shrink,flex_basis
         grow shrink works only in main axis.
         assumption:
-        grow shrink with margins can define whole flex box we dont even need any other property
+        grow shrink with margins can define whole flex box we dont even need any other property.
+        There is no need to define width percenatages if row orientation or height in column orientation
 
         """
         property_list={}
@@ -339,17 +340,16 @@ class FlexLayoutGenerator1D():
             grow=rect.width_dir(self.orientation)/min_rect.width_dir(self.orientation)
             grow=round(grow,3)
             # we kept both same for default properties..
-            rect.addOwnProps({'grow':grow,'shrink':grow},'flex')
-            property_list[rect.name]={'grow':grow}
-        return property_list
+            rect.addProps({'grow':grow,'shrink':grow},'flex')
+
               
     def detect_patterns(self):
         """
         sketch_rect: rect drawn by sketches..
         """
-        self.flex_property_list=self.getFlexProperty()
-        self.justification,self.margin=self.getJustification()
-        self.alignment=self.getAlignment()
+        self.getFlexProperty()
+        self.getJustification()
+        self.getAlignment()
 
 class FlexLayoutGenerator2D():
     def __init__(self):
