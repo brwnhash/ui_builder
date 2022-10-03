@@ -88,6 +88,7 @@ class UNode:
         self.uid=elm.id
         self.children=[]
 
+
 class FigmaParser():
     """
     Parser has data fetcher and parser 
@@ -97,9 +98,11 @@ class FigmaParser():
 
     """
 
-    def __init__(self,token,key):
+    def __init__(self,proj_id,token,key,store):
         """
         """
+        self.proj_id=proj_id
+        self.store=store
         self.req_key=key
         self.token=token
         self.x_offset,self.y_offset=0,0
@@ -107,7 +110,7 @@ class FigmaParser():
         self.parseMap={'FRAME':self.parseFrame,
                         'COMPONENT':self.parseComponent,
                         'INSTANCE':self.parseComponent}
-        self.comp_map={}
+        self.comp_list=[]
         self.compset_map={}
         self.page_map={}
         self.interaction_map={}
@@ -121,7 +124,7 @@ class FigmaParser():
         
 
     def getComponents(self):
-        return self.comp_map
+        return self.comp_list
    
 
     def fetch(self,page_id=None):
@@ -162,12 +165,13 @@ class FigmaParser():
         
         
     def parseComponent(self,elm,root):
-        if elm.id in self.comp_map:
+        if elm.id in self.comp_list:
             logger(f'skipped parsing of component {elm.id} as it already exists ')
             return
         fc=FigmaComponentParser(self.x_offset,self.y_offset)
         fc.parseComponent(elm,root)
-        self.comp_map.update(fc.comp_map)
+        self.comp_list.append(elm.id)
+        self.store.storeComponents(fc.comp_map)
 
 
     def parseFrame(self,data,parent=None):
@@ -188,9 +192,11 @@ class FigmaParser():
                 continue
             self.parseMap[element.type](element,root_node)
         if parent==None:
-            return self.getPageStructure(data)
+            page_structure=self.getPageStructure(data)
+            self.store.storePage(page_structure)
         else:
-            self.comp_map[root_node.uid]=root_node
+            self.store.storeComponents({root_node.uid:root_node})
+            self.comp_list.append(root_node.uid)
 
     def getPageStructure(self,parent):
         """
@@ -206,7 +212,9 @@ class FigmaParser():
 
 
     def parseNode(self,data):
-        
+        """
+        Node has single frame data
+        """
         frame=data.document
         self.x_offset,self.y_offset=frame.absoluteBoundingBox.x,frame.absoluteBoundingBox.y          
         fnodes=self.parseFrame(frame)
@@ -222,21 +230,19 @@ class FigmaParser():
         return canvas
 
 
-    def parsePages(self,data):
-        for page in data.document.pages:
-            self.page_map[page.name] =self.parseCanvas(page)
+    # def parsePages(self,data):
+    #     for page in data.document.pages:
+    #         self.page_map[page.name] =self.parseCanvas(page)
 
     def parse(self,data):
-
-        self.comp_map={}
+        """
+        parsing is done per page 
+        """
         type,doc,compsets=data['type'],data['doc'],data['compsets']
-        if type==FigmaParseType.PAGE:
-            self.parseNode(doc)
-        elif type==FigmaParseType.PROJECT:
-            self.parsePages(doc)
+        self.parseNode(doc)
         compsets={} if not compsets else compsets
         for comp_id,comp_data in compsets.items():
-            if comp_id in self.comp_map:
+            if comp_id in self.comp_list:
                 continue
             self.parseNode(comp_data)
         

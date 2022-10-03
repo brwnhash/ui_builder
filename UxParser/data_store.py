@@ -5,11 +5,36 @@ import joblib
 import os
 import shutil
 import json
+from abc import ABC, abstractmethod
 
 #Session component Manager manages components in current session
 #also stores components to store
 
-class DataStore():
+
+class DataStore(ABC):
+    """
+    Store Id and components per page 
+    """
+    @abstractmethod
+    def storeProjectMeta(self,info):
+        """
+        info is expected a json format.
+        """
+        return
+        
+    @abstractmethod
+    def storePage(self,page_id,page_data):
+        return
+
+    @abstractmethod
+    def storeComponents(self,comps):
+        return
+        
+    @abstractmethod
+    def getComponents(self,ids):
+        return
+
+class LocalStore(DataStore):
     """
     Store Id and components per page 
     """
@@ -24,6 +49,10 @@ class DataStore():
                 os.mkdir(self.proj_path)
         else:
             os.mkdir(self.proj_path)
+
+        self.comp_path=COMPONENT_STORE_PATH(self.proj_id)
+        if not os.path.exists(self.comp_path):
+            os.mkdir(self.comp_path)
 
     def storeProjectMeta(self,info):
         """
@@ -45,14 +74,11 @@ class DataStore():
             joblib.dump(frame,os.path.join(path,str(uid)+self.file_ext))
 
     def storeComponents(self,comps):
-        path=COMPONENT_STORE_PATH(self.proj_id)
-        if not os.path.exists(path):
-            os.mkdir(path)
         for uid,comp in comps.items():
-            joblib.dump(comp,os.path.join(path,str(uid)+self.file_ext))
+            joblib.dump(comp,os.path.join(self.comp_path,str(uid)+self.file_ext))
         
     def getComponents(self,ids):
-        path=COMPONENT_STORE_PATH(self.proj_id)
+        path=self.comp_path
         files=os.listdir(path) if not ids else [str(id)+self.file_ext for id in ids]
         for file in files:
             fpath=os.path.join(path,file)
