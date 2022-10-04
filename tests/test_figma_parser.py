@@ -85,14 +85,13 @@ def test_figma_Canvas_parser():
     fc.parseCanvasNode(data)
 
 def test_figma_parser():
-    from  UxParser import FigmaParser,DataStore
+    from  UxParser import FigmaParser,LocalStore
     import joblib
     
     proj_id='sample_proj'
     input_file='/home/admin1/data/ui_builder/file_data.json'
     data=joblib.load(input_file)
-    fc=FigmaParser(None,None)
+    store=LocalStore(proj_id)
+    fc=FigmaParser(None,None,store)
     fc.parse(data)
-    store=DataStore(proj_id)
-    store.storeComponents(fc.getComponents())
-    print('cool')   
+    

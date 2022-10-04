@@ -98,10 +98,9 @@ class FigmaParser():
 
     """
 
-    def __init__(self,proj_id,token,key,store):
+    def __init__(self,token,key,store):
         """
         """
-        self.proj_id=proj_id
         self.store=store
         self.req_key=key
         self.token=token
@@ -114,6 +113,13 @@ class FigmaParser():
         self.compset_map={}
         self.page_map={}
         self.interaction_map={}
+    
+    def initializeFrame(self):
+        self.comp_list=[]
+        self.compset_map={}
+        self.page_map={}
+        self.interaction_map={}
+
 
     def isDerivedComponent(self,type):
         """
@@ -179,7 +185,6 @@ class FigmaParser():
         Inner Frames are considered a component
         """
         
-        frame_name=data.name
         box=getDimProps(data)
         box['x_offset'],box['y_offset'],box['parent']=self.x_offset,self.y_offset,parent
         root_node=Frame(box)
@@ -191,10 +196,9 @@ class FigmaParser():
                 logging.error(f'Frame top element {element.type} is not supported')
                 continue
             self.parseMap[element.type](element,root_node)
-        if parent==None:
-            page_structure=self.getPageStructure(data)
-            self.store.storePage(page_structure)
-        else:
+
+        #frame which has parent is inner Frame considered as component
+        if parent!=None:
             self.store.storeComponents({root_node.uid:root_node})
             self.comp_list.append(root_node.uid)
 
@@ -217,28 +221,17 @@ class FigmaParser():
         """
         frame=data.document
         self.x_offset,self.y_offset=frame.absoluteBoundingBox.x,frame.absoluteBoundingBox.y          
-        fnodes=self.parseFrame(frame)
-        self.page_map[frame.name]=fnodes
+        self.parseFrame(frame)
+        page_node=self.getPageStructure(frame)
+        self.store.storePage(page_node)
 
-
-    def parseCanvas(self,data):
-        canvas={}
-        for frame in data.children:
-            self.x_offset,self.y_offset=frame.absoluteBoundingBox.x,frame.absoluteBoundingBox.y          
-            fnodes=self.parseFrame(frame)
-            canvas[frame.name]=fnodes
-        return canvas
-
-
-    # def parsePages(self,data):
-    #     for page in data.document.pages:
-    #         self.page_map[page.name] =self.parseCanvas(page)
 
     def parse(self,data):
         """
         parsing is done per page 
         """
         type,doc,compsets=data['type'],data['doc'],data['compsets']
+        self.initializeFrame()
         self.parseNode(doc)
         compsets={} if not compsets else compsets
         for comp_id,comp_data in compsets.items():

@@ -53,6 +53,9 @@ class LocalStore(DataStore):
         self.comp_path=COMPONENT_STORE_PATH(self.proj_id)
         if not os.path.exists(self.comp_path):
             os.mkdir(self.comp_path)
+        self.page_store_path=PAGE_STORE_PATH(self.proj_id)
+        if not os.path.exists(self.page_store_path):
+            os.mkdir(self.page_store_path)
 
     def storeProjectMeta(self,info):
         """
@@ -66,12 +69,9 @@ class LocalStore(DataStore):
             json.dump(info,fp)
         
 
-    def storePage(self,page_id,page_data):
-        path=PAGE_STORE_PATH(page_id)
-        if not os.path.exists(path):
-            os.mkdir(path)
-        for uid,frame in page_data.items():
-            joblib.dump(frame,os.path.join(path,str(uid)+self.file_ext))
+    def storePage(self,page_data):
+        uid=page_data.uid
+        joblib.dump(page_data,os.path.join(self.page_store_path,str(uid)+self.file_ext))
 
     def storeComponents(self,comps):
         for uid,comp in comps.items():
