@@ -1,4 +1,4 @@
-from UxParser.nodes import Rectangle
+from helpers import Rectangle
 
 def get_fake_box_props(name,x,y,width,height,view_x=None,view_y=None,view_width=None,view_height=None,parent=None):
     import random

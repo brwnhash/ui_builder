@@ -1,7 +1,5 @@
 
 
-
-
 class RECT_ORIENT():
     ROW=0
     COLUMN=1

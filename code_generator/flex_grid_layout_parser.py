@@ -1,10 +1,8 @@
-from re import L
-from xml.dom.expatbuilder import parseString
-from .nodes import Rectangle,RECT_ORIENT,getXMargins,getYMargins
+
 from collections import defaultdict
 import numpy as np
 from config import FLEX_CONIG
-from .common import DictVect
+from helpers import DictVect,Rectangle,RECT_ORIENT,getXMargins,getYMargins
 import math
 
 def getRowWeight(rect1,rect2):

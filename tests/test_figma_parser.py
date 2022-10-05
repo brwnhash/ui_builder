@@ -1,5 +1,5 @@
 import imp
-from UxParser.nodes import Rectangle
+from helpers import Rectangle
 
 
 
@@ -94,4 +94,29 @@ def test_figma_parser():
     store=LocalStore(proj_id)
     fc=FigmaParser(None,None,store)
     fc.parse(data)
+
+
+def test_figma_page_fetch_parse():
+    from  UxParser import FigmaParser,LocalStore
+    import joblib
+
+    token = 'figd_6OS0WhuNuZw79Nkmolp_efuVsvxJ3AVVtUNCziVy' 
+    file_key = 'Y7B9m6drXsQh8P6XtAa4GB'
+    out_file='/home/admin1/data/ui_builder/out_data.json'
+    page_id='1%3A2'
+    proj_id='first_project'
+    store=LocalStore(proj_id)
+    fp=FigmaParser(token,file_key,store)
+    data=fp.fetchAll(page_id)  
+    joblib.dump(data,out_file)
+
+    input_file=out_file
+ 
+    data=joblib.load(input_file)
+    
+    fp.parse(data)
+
+    print('....data dumped......')
+
+
     

@@ -1,12 +1,6 @@
 
 import numpy as np
 
-class ComponentParser():
-    def __init__(self):
-        pass
-
-
-
 
 class DictVect():
     def __init__(self,features,expected_values):

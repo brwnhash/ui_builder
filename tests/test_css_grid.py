@@ -1,6 +1,6 @@
 
 from .common import get_fake_box_props
-from UxParser.nodes import Rectangle
+from helpers import Rectangle
 
 def get_2d_grid_div1():
     parent=Rectangle(get_fake_box_props('0',0,0,340,140))

@@ -1,8 +1,7 @@
 from asyncio.log import logger
 import FigmaPy
-from .common import ComponentParser
 import logging
-from .nodes import Frame,Component,Rectangle
+from helpers import Frame,Component,Rectangle,ComponentParser,DictVect
 
 
 

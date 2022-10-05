@@ -1,8 +1,8 @@
 
 from .common import get_fake_box_props,get_var_boxes
-from UxParser import FlexLayoutGenerator1D,FlexLayoutGenerator2D
-from UxParser.nodes import Rectangle
-from UxParser.flex_grid_layout_generator import GroupBoxes
+
+from helpers import Rectangle
+from code_generator import GroupBoxes,FlexLayoutGenerator1D,FlexLayoutGenerator2D
     
 
 
@@ -116,15 +116,15 @@ def symmetric_2d_row_col_boxes_check():
     
 
 def test_box_groupings():
-    from UxParser.flex_grid_layout_generator import GroupBoxes
-    from UxParser.nodes import Rectangle
+    from code_generator.flex_grid_layout_parser import GroupBoxes
+    from helpers.nodes import Rectangle
     #test 1 equal 
 
     rect=Rectangle()
 
 def symmetric_1d_row_col_boxes_check():
-    from UxParser.flex_grid_layout_generator import GroupBoxes
-    from UxParser.nodes import Rectangle
+    from code_generator.flex_grid_layout_parser import GroupBoxes
+    from helpers.nodes import Rectangle
     #col boxes
     #box_list=[get_row_boxes(),get_col_boxes(),get_non_sym_row_boxes(),get_partial_col_overlap()]
     box_list=[get_non_sym_row_boxes()]
