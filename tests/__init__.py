@@ -1,3 +1,3 @@
 from .test_figma_parser import *
-from .test_flex_layout import *
-from .test_css_grid import *
+from .code_generator.test_css_grid import *
+from .code_generator.test_flex_layout import *

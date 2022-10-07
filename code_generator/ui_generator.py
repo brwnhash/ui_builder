@@ -7,6 +7,7 @@ def choiceLookUp(type,choices):
 
 class UiGenerator():
     """
+    config contains all the choice for parsers etc.
     ux parser: fetch and parse ux 
     layout parser : parse layout based on selected choice 
     """
@@ -30,6 +31,14 @@ class UiGenerator():
         
 
     def run(self):
+        """
+        request can be to build page and all interactions or a single component
+        1.select UX and do parsing .
+        2.Adapter to convert to format which generator can understand
+        3.generate layout ,generate style sheet ,generate components in JS frameworks
+
+        """
+        
 
         pass
 
