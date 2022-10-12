@@ -79,19 +79,7 @@ class Node(object):
 
         
 
-class Frame(Node):
-    def __init__(self,props,parent=None,type='FRAME'):
-        Node.__init__(self,props['width'],props['height'],props['x'],props['y'],props['view_width'],\
-                        props['view_height'],props['view_x'],props['view_y'],props['name'],\
-                        props['uid'],parent,type,props['x_offset'],props['y_offset'])
-    
-class Component(Node):
-    def __init__(self,props,parent=None,type='COMPONENT',parent_comp_id=None):
-        Node.__init__(self,props['width'],props['height'],props['x'],props['y'],props['view_width'],\
-                        props['view_height'],props['view_x'],props['view_y'],props['name'],\
-                        props['uid'],parent,type,props['x_offset'],props['y_offset'])
 
-        self.parent_comp_id=parent_comp_id
         
 def getXMargins(rects):
     parent=rects[0].parent
@@ -229,4 +217,16 @@ class Rectangle(Node):
         bottom_block=other if top_block==self else self
         height_in=True if (bottom_block.top>=top_block.top and  bottom_block.bottom<=top_block.bottom) else False
         return True if (width_in and height_in) else False
+
+
+
+
+class Frame(Rectangle):
+    def __init__(self,props,parent=None,type='FRAME'):
+        Rectangle.__init__(self,props,parent,type)
+    
+class Component(Rectangle):
+    def __init__(self,props,parent=None,type='COMPONENT',parent_comp_id=None):
+        Rectangle.__init__(self,props,parent,type)
+        self.parent_comp_id=parent_comp_id
 

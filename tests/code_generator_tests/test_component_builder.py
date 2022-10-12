@@ -1,10 +1,15 @@
-from code_generator import ComponentBuilder
+from code_generator import ComponentsBuilder
 
 def test_simple_comp_builder():
-    base='/home/admin1/data/ui_builder/first_project'
+    from code_generator import GridFlexLayoutParser
+    from helpers import NodeType,LocalStore
+    proj_id='first_project'
+    base=f'/home/admin1/data/ui_builder/{proj_id}'
     file=base+'/page/1:2.mm'
     component_folder=base+'/components'
-    cb=ComponentBuilder(file,component_folder,'.mm')
+    store=LocalStore(proj_id)
+    layout_parser=GridFlexLayoutParser(store)
+    cb=ComponentsBuilder(file,component_folder,NodeType.PAGE,layout_parser)
     cb.run()
 
 

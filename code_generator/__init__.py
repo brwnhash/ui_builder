@@ -1,2 +1,2 @@
-from .flex_grid_layout_parser import FlexLayoutGenerator1D,GridCreator,FlexLayoutGenerator2D,GroupBoxes
-from .component_builder import ComponentBuilder
+from .flex_grid_layout_parser import FlexLayoutGenerator1D,GridCreator,FlexLayoutGenerator2D,GroupBoxes,GridFlexLayoutParser
+from .components_builder import ComponentsBuilder

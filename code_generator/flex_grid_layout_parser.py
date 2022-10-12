@@ -4,6 +4,8 @@ import numpy as np
 from config import FLEX_CONIG
 from helpers import DictVect,Rectangle,RECT_ORIENT,getXMargins,getYMargins
 import math
+from helpers import ComponentLayoutParser
+
 
 def getRowWeight(rect1,rect2):
     return 1-(abs(rect1.top-rect2.top)/min([rect1.height,rect2.height]))
@@ -27,10 +29,8 @@ class FNode():
 
 
 class GroupBoxes():
-    ROW_COL=RECT_ORIENT.BOTH
-    ROW_ONLY=RECT_ORIENT.ROW
-    COL_ONLY=RECT_ORIENT.COLUMN 
-    def __init__(self,rects,grouping_type=ROW_COL,row_extra_wt=0.05,col_extra_wt=0):
+
+    def __init__(self,rects,grouping_type=RECT_ORIENT.BOTH,row_extra_wt=0.05,col_extra_wt=0):
         self.rects=rects
         self.grouping_type=grouping_type
         self.row_extra_wt=row_extra_wt
@@ -102,7 +102,7 @@ class GroupBoxes():
                 node_uid_map[node.uid]=(node.row_grp_idx,RECT_ORIENT.ROW)
             else:
                 node.row_grp_idx=-1
-                node_uid_map[node.uid]=(node.col_grp_idx,RECT_ORIENT.COL)
+                node_uid_map[node.uid]=(node.col_grp_idx,RECT_ORIENT.COLUMN)
             
         return node_uid_map
 
@@ -127,13 +127,13 @@ class GroupBoxes():
                 if idx==c_idx:
                     continue
 
-                if (self.grouping_type!=GroupBoxes.COL_ONLY) and (Rectangle.is_row_intersection(rect,rect1)):
+                if (self.grouping_type!=RECT_ORIENT.COLUMN) and (Rectangle.is_row_intersection(rect,rect1)):
                     diff=Rectangle.get_x_diff(rect,rect1)
                     if diff<best_x_diff:
                         best_x_diff=diff
                         nearest_row_idx=c_idx
 
-                if (self.grouping_type!=GroupBoxes.ROW_ONLY) and (Rectangle.is_col_intersection(rect,rect1)):
+                if (self.grouping_type!=RECT_ORIENT.ROW) and (Rectangle.is_col_intersection(rect,rect1)):
                     diff=Rectangle.get_y_diff(rect,rect1)
                     if diff<best_y_diff:
                         best_y_diff=diff
@@ -353,6 +353,8 @@ class FlexLayoutGenerator2D():
     def __init__(self):
         pass
     def detectPatterns(self,rect_list):
+        if not rect_list:
+            return
         gb=GroupBoxes(rect_list)
         grps=gb.group()
         for grp_id,grp_rects in grps.items():
@@ -382,6 +384,7 @@ class GridCreator():
 
     def getBestMatch(self,max_val,targets,max_error=0):
         best_match,min_err=1,1e5
+        max_val=int(max_val)
         for i in range(1,max_val+1,1):
             if (max_val%i)>max_error:
                 continue
@@ -405,7 +408,7 @@ class GridCreator():
         we assume grid design and minimum grid 1
         """
         parent=rects[0].parent
-        min_wt=min(rects,key=lambda rect:rect.width).width
+        min_wt=int(min(rects,key=lambda rect:rect.width).width)
 
         widths=[rect.width for rect in rects]
         widths.append(parent.width)
@@ -449,13 +452,13 @@ class GridCreator():
 
     def extractGridProps(self,rect_list):
         #group row wise
-        gb=GroupBoxes(rect_list,GroupBoxes.ROW_ONLY)
+        gb=GroupBoxes(rect_list,RECT_ORIENT.ROW)
         grps=gb.group()
         #get groups and add that to get num rows and cols.
         self.calculateNumCols(rect_list,grps)
 
         #group column wise
-        gb=GroupBoxes(rect_list,GroupBoxes.COL_ONLY)
+        gb=GroupBoxes(rect_list,RECT_ORIENT.COLUMN)
         grps=gb.group()
         self.calculateNumRows(rect_list,grps)
         #add parent prop
@@ -464,4 +467,31 @@ class GridCreator():
             elm_props=self.getElmProps(rect)
             rect.addProps(elm_props,'grid_item')
         return rect_list
+
+    def extractPageStructure(self,rect_list):
+        self.extractGridProps(rect_list)
+
+class GridFlexLayoutParser(ComponentLayoutParser):
+    def __init__(self,store):
+        self.gc=GridCreator()
+        self.fg=FlexLayoutGenerator2D()
+        self.store=store
+        
+    def parsePageStructure(self,node):
+        ids=[un.uid for un in node.children]
+        comp_list=[rect for (id,rect) in self.store.getComponents(ids)]
+        self.gc.extractPageStructure(comp_list)
+        comp_map={ id:rect  for id,rect in  zip(ids,comp_list)}
+        self.store.storeComponents(comp_map)
+        
+
+    def parseComponentStructure(self,node):
+        """
+        extract component children props
+        """  
+        self.fg.detectPatterns(node.children)
+        comps={cnode.uid:cnode  for cnode in node.children}
+        comps[node.uid]=node
+        self.store.storeComponents()
+        
     

@@ -85,19 +85,21 @@ def test_figma_Canvas_parser():
     fc.parseCanvasNode(data)
 
 def test_figma_parser():
-    from  UxParser import FigmaParser,LocalStore
+    from  UxParser import FigmaParser
+    from helpers import LocalStore
     import joblib
     
     proj_id='sample_proj'
     input_file='/home/admin1/data/ui_builder/file_data.json'
     data=joblib.load(input_file)
-    store=LocalStore(proj_id)
+    store=LocalStore(proj_id,'w')
     fc=FigmaParser(None,None,store)
     fc.parse(data)
 
 
 def test_figma_page_fetch_parse():
-    from  UxParser import FigmaParser,LocalStore
+    from  UxParser import FigmaParser
+    from helpers import LocalStore
     import joblib
 
     token = 'figd_6OS0WhuNuZw79Nkmolp_efuVsvxJ3AVVtUNCziVy' 
@@ -105,7 +107,7 @@ def test_figma_page_fetch_parse():
     out_file='/home/admin1/data/ui_builder/out_data.json'
     page_id='1%3A2'
     proj_id='first_project'
-    store=LocalStore(proj_id)
+    store=LocalStore(proj_id,'w')
     fp=FigmaParser(token,file_key,store)
     data=fp.fetchAll(page_id)  
     joblib.dump(data,out_file)

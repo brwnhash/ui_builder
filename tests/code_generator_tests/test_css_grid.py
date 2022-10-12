@@ -12,7 +12,7 @@ def get_2d_grid_div1():
     return bb
 
 def test_css_grid():
-    from UxParser import GridCreator
+    from code_generator import GridCreator
     rect_list=get_2d_grid_div1()
     gc=GridCreator()
     gc.extractGridProps(rect_list)

@@ -36,6 +36,7 @@ class FigmaComponentParser(ComponentParser):
         self.y_offset=y_offset
         self.comp_map={}
         self.parseMap={"RECTANGLE":self.parseRectangle,
+        "GROUP":self.parseRectangle,
         "COMPONENT":self.parseComponent,
         "INSTANCE":self.parseComponent,
         "LINE":self.parseLine,
@@ -62,6 +63,7 @@ class FigmaComponentParser(ComponentParser):
         rect=Rectangle(props)
         for elm in rect.children:
             self.parseElement(elm,rect)
+        parent.append(rect)
 
 
     
