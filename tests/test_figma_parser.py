@@ -110,6 +110,7 @@ def test_figma_page_fetch_parse():
     store=LocalStore(proj_id,'w')
     fp=FigmaParser(token,file_key,store)
     data=fp.fetchAll(page_id)  
+
     joblib.dump(data,out_file)
 
     input_file=out_file

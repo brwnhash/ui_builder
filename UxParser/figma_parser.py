@@ -3,7 +3,10 @@ import FigmaPy
 import logging
 from helpers import Frame,Component,Rectangle,ComponentParser,DictVect
 
-
+class UNode:
+    def __init__(self,id):
+        self.uid=id
+        self.children=[]
 
 # valid top elements
 
@@ -24,6 +27,15 @@ def getDimProps(data):
 
     return res
 
+# GROUP ,inside frame are mapped as components 
+class ElmType:
+    RECTANGLE="RECTANGLE"
+    GROUP="GROUP"
+    COMPONENT="COMPONENT"
+    INSTANCE="INSTANCE"
+    LINE="LINE"
+    ELLIPSE="ELLIPSE"
+    FRAME="FRAME"
 
 class FigmaComponentParser(ComponentParser):
     """
@@ -31,18 +43,19 @@ class FigmaComponentParser(ComponentParser):
     parse component data and return Component and interaction to component 
     return: component
     """
-    def __init__(self,x_offset,y_offset):
+    def __init__(self,x_offset,y_offset,store):
         self.x_offset=x_offset
         self.y_offset=y_offset
+        self.store=store
         self.comp_map={}
-        self.parseMap={"RECTANGLE":self.parseRectangle,
-        "GROUP":self.parseRectangle,
-        "COMPONENT":self.parseComponent,
-        "INSTANCE":self.parseComponent,
-        "LINE":self.parseLine,
-        "ELLIPSE":self.parseEllipse
-
-        }
+        self.parseMap={
+                            ElmType.RECTANGLE:self.parseRectangle,
+                            ElmType.GROUP:self.parseComponent,
+                            ElmType.COMPONENT:self.parseComponent,
+                            ElmType.INSTANCE:self.parseComponent,
+                            ElmType.LINE:self.parseLine,
+                            ElmType.ELLIPSE:self.parseEllipse
+                    }
 
         
     def getNodeDimProps(self,data,parent):
@@ -61,12 +74,12 @@ class FigmaComponentParser(ComponentParser):
     def parseRectangle(self,data,parent):
         props=self.getNodeDimProps(data,parent)
         rect=Rectangle(props)
-        for elm in rect.children:
-            self.parseElement(elm,rect)
-        parent.append(rect)
+        if hasattr(data,'children'):
+            for elm in data.children:
+                self.parseElement(elm,rect)
+        parent.children.append(rect)
 
-
-    
+ 
     def parseEllipse(self,data,parent):
         pass
 
@@ -75,19 +88,14 @@ class FigmaComponentParser(ComponentParser):
 
     def parseComponent(self,data,parent):
         props=self.getNodeDimProps(data,parent)
-        comp_id= data.componentId if hasattr(data,'componentId') else None
+        comp_id= data.componentId if hasattr(data,'componentId') else data.id
         comp=Component(props,parent,data.type,comp_id)
         self.comp_map[comp.uid]=comp
         for elm in data.children:
             self.parseElement(elm,comp)
+        self.store.storeComponents({comp_id:comp})
         return comp
         
-
-
-class UNode:
-    def __init__(self,elm):
-        self.uid=elm.id
-        self.children=[]
 
 
 class FigmaParser():
@@ -175,10 +183,10 @@ class FigmaParser():
         if elm.id in self.comp_list:
             logger(f'skipped parsing of component {elm.id} as it already exists ')
             return
-        fc=FigmaComponentParser(self.x_offset,self.y_offset)
+        fc=FigmaComponentParser(self.x_offset,self.y_offset,self.store)
         fc.parseComponent(elm,root)
         self.comp_list.append(elm.id)
-        self.store.storeComponents(fc.comp_map)
+       
 
 
     def parseFrame(self,data,parent=None):
@@ -203,14 +211,22 @@ class FigmaParser():
             self.store.storeComponents({root_node.uid:root_node})
             self.comp_list.append(root_node.uid)
 
+    def isComponentType(self,elm):
+        if elm.type in [ElmType.GROUP,ElmType.COMPONENT,ElmType.INSTANCE,ElmType.FRAME]:
+            return True
+        return False
+
     def getPageStructure(self,parent):
         """
         DOM structure with only ids
         """
-        node=UNode(parent)
+        node=UNode(parent.id)
         if not hasattr(parent,'children'):
             return node
         for elm in parent.children:
+            if not self.isComponentType(elm):
+                continue
+            comp_id= elm.componentId if hasattr(elm,'componentId') else elm.id
             cnode=self.getPageStructure(elm)
             node.children.append(cnode)
         return node

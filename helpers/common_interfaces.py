@@ -17,3 +17,9 @@ class ComponentLayoutParser():
 class NodeType:
     PAGE=0
     COMPONENT=1
+
+
+
+class CompNode:
+    def __init__(self,uid):
+        self.uid=uid

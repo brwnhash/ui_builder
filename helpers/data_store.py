@@ -6,7 +6,7 @@ import os
 import shutil
 import json
 from abc import ABC, abstractmethod
-from helpers import Node
+from helpers import Component,CompNode
 
 #Session component Manager manages components in current session
 #also stores components to store
@@ -78,13 +78,15 @@ class LocalStore(DataStore):
         uid=page_data.uid
         joblib.dump(page_data,os.path.join(self.page_store_path,str(uid)+self.file_ext))
 
-    def normalizeChildren(self,comp):
+    def normalizeComponentChildren(self,comp):
         ids=[]
         for child in comp.children:
-            if isinstance(child,Node):
-                ids.append(child.uid)
-            elif isinstance(child,str):
+            if isinstance(child,Component):
+                ids.append(CompNode(child.uid))
+            elif isinstance(child,CompNode):
                 ids.append(child)
+            else:
+                pass
         comp.children=ids
 
 
@@ -93,7 +95,7 @@ class LocalStore(DataStore):
         during storage if children are of type Node ,store them in list format
         """
         for uid,comp in comps.items():
-            self.normalizeChildren(comp)
+            self.normalizeComponentChildren(comp)
             joblib.dump(comp,os.path.join(self.comp_path,str(uid)+self.file_ext))
 
     def getComponent(self,id):

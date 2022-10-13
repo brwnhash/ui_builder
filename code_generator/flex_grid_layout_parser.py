@@ -2,7 +2,7 @@
 from collections import defaultdict
 import numpy as np
 from config import FLEX_CONIG
-from helpers import DictVect,Rectangle,RECT_ORIENT,getXMargins,getYMargins
+from helpers import DictVect,Rectangle,RECT_ORIENT,getXMargins,getYMargins,CompNode
 import math
 from helpers import ComponentLayoutParser
 
@@ -488,10 +488,17 @@ class GridFlexLayoutParser(ComponentLayoutParser):
     def parseComponentStructure(self,node):
         """
         extract component children props
+        component inside component stored as CompNode,fetch that node info
         """  
+        child_nodes=[]
+        for child in node.children:
+            if isinstance(child,CompNode):
+                child_nodes.append(self.store.getComponents([child.uid]))
+            else:
+                child_nodes.append(child)
         self.fg.detectPatterns(node.children)
         comps={cnode.uid:cnode  for cnode in node.children}
         comps[node.uid]=node
-        self.store.storeComponents()
+        self.store.storeComponents(comps)
         
     
