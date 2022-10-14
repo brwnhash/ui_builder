@@ -199,7 +199,10 @@ class FlexLayoutGenerator1D():
             top_margin=(rect.top_dir(self.orientation)-self.parent_rect.top_dir(self.orientation))/self.parent_rect.height_dir(self.orientation)
             bottom_margin=(self.parent_rect.bottom_dir(self.orientation) - rect.bottom_dir(self.orientation))/self.parent_rect.height_dir(self.orientation)
             top_margin_bigger=True if top_margin>bottom_margin else False
-            div= top_margin/bottom_margin  if top_margin_bigger else bottom_margin/top_margin
+            if bottom_margin!=0:
+                div= top_margin/bottom_margin  if top_margin_bigger else bottom_margin/top_margin
+            else:
+                div=0
             alignment='flex-start'
             if top_margin<=0 and bottom_margin<=0:
                 alignment='stretch' 
@@ -277,7 +280,10 @@ class FlexLayoutGenerator1D():
         return False,-1
 
     def _getMarginDiff(self,left,right):
-        return max([left,right])/(min([left,right]))
+        max_val=max([left,right])
+        min_val=(min([left,right]))
+        min_val=1 if min_val<=0 else min_val
+        return max_val/min_val
 
     def getJustification(self):
         """
@@ -479,7 +485,7 @@ class GridFlexLayoutParser(ComponentLayoutParser):
         
     def parsePageStructure(self,node):
         ids=[un.uid for un in node.children]
-        comp_list=[rect for (id,rect) in self.store.getComponents(ids)]
+        comp_list=self.store.getComponents(ids)
         self.gc.extractPageStructure(comp_list)
         comp_map={ id:rect  for id,rect in  zip(ids,comp_list)}
         self.store.storeComponents(comp_map)
@@ -493,11 +499,12 @@ class GridFlexLayoutParser(ComponentLayoutParser):
         child_nodes=[]
         for child in node.children:
             if isinstance(child,CompNode):
-                child_nodes.append(self.store.getComponents([child.uid]))
+                comps=self.store.getComponents([child.uid])
+                child_nodes.extend(comps)
             else:
                 child_nodes.append(child)
-        self.fg.detectPatterns(node.children)
-        comps={cnode.uid:cnode  for cnode in node.children}
+        self.fg.detectPatterns(child_nodes)
+        comps={cnode.uid:cnode  for cnode in child_nodes}
         comps[node.uid]=node
         self.store.storeComponents(comps)
         

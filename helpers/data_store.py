@@ -107,8 +107,10 @@ class LocalStore(DataStore):
     def getComponents(self,ids):
         path=self.comp_path
         files=os.listdir(path) if not ids else [str(id)+self.file_ext for id in ids]
+        dlist=[]
         for id,file in zip(ids,files):
             fpath=os.path.join(path,file)
             data=joblib.load(fpath)
-            yield id,data
+            dlist.append(data)
+        return dlist
 

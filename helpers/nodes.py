@@ -160,6 +160,13 @@ class Rectangle(Node):
         return valid_intersection
 
     @staticmethod
+    def is_equal(rect1,rect2):
+        start=rect1.left==rect2.left and rect1.top==rect2.top
+        end=rect1.bottom=rect2.bottom and rect1.right==rect2.right
+        return start and end
+
+
+    @staticmethod
     def get_orientation(rects):
         """
         orientation won't work if there is only one block 
@@ -218,7 +225,15 @@ class Rectangle(Node):
         height_in=True if (bottom_block.top>=top_block.top and  bottom_block.bottom<=top_block.bottom) else False
         return True if (width_in and height_in) else False
 
+def isValidParentChildStructure(parent):
+    valid=True
+    for child in parent.children:
+        if not parent.contains(child):
+            valid=False
+    return valid
 
+def isRedundantChild():
+    pass
 
 
 class Frame(Rectangle):

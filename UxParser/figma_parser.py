@@ -216,18 +216,18 @@ class FigmaParser():
             return True
         return False
 
-    def getPageStructure(self,parent):
+    def getPageStructure(self,parent,id):
         """
         DOM structure with only ids
         """
-        node=UNode(parent.id)
+        node=UNode(id)
         if not hasattr(parent,'children'):
             return node
         for elm in parent.children:
             if not self.isComponentType(elm):
                 continue
             comp_id= elm.componentId if hasattr(elm,'componentId') else elm.id
-            cnode=self.getPageStructure(elm)
+            cnode=self.getPageStructure(elm,comp_id)
             node.children.append(cnode)
         return node
 
@@ -239,7 +239,7 @@ class FigmaParser():
         frame=data.document
         self.x_offset,self.y_offset=frame.absoluteBoundingBox.x,frame.absoluteBoundingBox.y          
         self.parseFrame(frame)
-        page_node=self.getPageStructure(frame)
+        page_node=self.getPageStructure(frame,frame.id)
         self.store.storePage(page_node)
 
 
