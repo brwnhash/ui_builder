@@ -2,7 +2,7 @@
 import joblib
 import os
 from config import  COMPONENT_STORE_PATH,COMP_FILES_EXT
-from helpers import NodeType
+from helpers import NodeType,normalizeComponent,isValidParentChildStructure
 
 
 class ComponentsBuilder():

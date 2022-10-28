@@ -373,7 +373,9 @@ class FlexLayoutGenerator2D():
 class GridCreator():
     def __init__(self):
         self.row_div=0
+        self.row_div_factor=0
         self.col_div=0
+        self.col_div_factor=0
 
     def getElmProps(self,rect):
         """
@@ -381,10 +383,10 @@ class GridCreator():
         indexing starts from 1 so add 1 to final results.
         """
         rnd=lambda val:int(math.floor(val)+1)
-        col_start=rnd(rect.left/self.col_div)
-        row_start=rnd(rect.top/self.row_div)
-        col_span=rnd((rect.left+rect.width)/self.col_div)
-        row_span=rnd((rect.top+rect.height)/self.row_div)
+        col_start=rnd(rect.left/self.col_div_factor)
+        row_start=rnd(rect.top/self.row_div_factor)
+        col_span=rnd((rect.left+rect.width)/self.col_div_factor)
+        row_span=rnd((rect.top+rect.height)/self.row_div_factor)
         
         return {'grid-row-start':row_start,'grid-row-end':row_span,'grid-column-start':col_start,'grid-column-end':col_span}
 
@@ -424,7 +426,7 @@ class GridCreator():
             widths.extend(xmargins)
         
         max_col_div=self.getBestMatch(min_wt,widths)
- 
+        self.col_div_factor=max_col_div
         self.col_div=int(parent.width/max_col_div)
 
     def calculateNumRows(self,rects,grps):
@@ -444,7 +446,8 @@ class GridCreator():
             ymargins=getYMargins(grp_rects)
             heights.extend(ymargins)
 
-        max_row_div=self.getBestMatch(min_ht,heights)   
+        max_row_div=self.getBestMatch(min_ht,heights)  
+        self.row_div_factor=max_row_div 
         self.row_div=int(parent.height/max_row_div)
 
     def addParentProps(self,rect):
@@ -452,8 +455,8 @@ class GridCreator():
         if parent==None:
             raise Exception('Parent is needed for rect list to assign props')
         props={ 'display': 'grid',
-                'grid-template-columns':'repeat({row_div}, 1fr)'.format(row_div=self.row_div),
-                'grid-template-rows':'repeat({col_div}, 1fr)'.format(col_div=self.col_div)}
+                'grid-template-columns':'repeat({col_div}, 1fr)'.format(col_div=self.col_div),
+                'grid-template-rows':'repeat({row_div}, 1fr)'.format(row_div=self.row_div)}
         parent.addProps(props,'grid_container')
 
     def extractGridProps(self,rect_list):
@@ -484,10 +487,14 @@ class GridFlexLayoutParser(ComponentLayoutParser):
         self.store=store
         
     def parsePageStructure(self,node):
+        """
+        
+        """
         ids=[un.uid for un in node.children]
         comp_list=self.store.getComponents(ids)
         self.gc.extractPageStructure(comp_list)
         comp_map={ id:rect  for id,rect in  zip(ids,comp_list)}
+        comp_map[node.uid]=comp_list[0].parent # parent 
         self.store.storeComponents(comp_map)
         
 

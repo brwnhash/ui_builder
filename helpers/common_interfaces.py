@@ -23,3 +23,4 @@ class NodeType:
 class CompNode:
     def __init__(self,uid):
         self.uid=uid
+

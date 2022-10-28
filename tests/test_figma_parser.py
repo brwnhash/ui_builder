@@ -1,8 +1,3 @@
-import imp
-from helpers import Rectangle
-
-
-
 
 def test_figma_reader():
     import FigmaPy
@@ -41,8 +36,8 @@ def get_figma_data_dump():
     from  UxParser import FigmaParser
     import joblib
     token = 'figd_6OS0WhuNuZw79Nkmolp_efuVsvxJ3AVVtUNCziVy' 
-    file_key = 'Y7B9m6drXsQh8P6XtAa4GB'
-    page_id='1%3A2'
+    file_key = 'nbglPg04saGFg851zKXfsh'
+    page_id='15%3A16'
     fp=FigmaParser(token,file_key)
     data=fp.fetchAll(page_id)
     out_file='/home/admin1/data/ui_builder/file_data.json'
@@ -101,12 +96,13 @@ def test_figma_page_fetch_parse():
     from  UxParser import FigmaParser
     from helpers import LocalStore
     import joblib
+    import json
 
     token = 'figd_6OS0WhuNuZw79Nkmolp_efuVsvxJ3AVVtUNCziVy' 
-    file_key = 'Y7B9m6drXsQh8P6XtAa4GB'
+    file_key = 'nbglPg04saGFg851zKXfsh'
     out_file='/home/admin1/data/ui_builder/out_data.json'
-    page_id='1%3A2'
-    proj_id='first_project'
+    page_id='21%3A53'
+    proj_id='grid_project'
     store=LocalStore(proj_id,'w')
     fp=FigmaParser(token,file_key,store)
     # data=fp.fetchAll(page_id)  

@@ -12,13 +12,14 @@ from tests import *
 #get_figma_data_dump()
 #test_figma_parser()
 
-#test_figma_page_fetch_parse()
-test_simple_comp_builder()
 
+
+test_figma_page_fetch_parse()
+#test_simple_comp_builder()
+#test_simple_HC_Writer()
 #test_flex_layout_generator()
 #dump_figma_data()
 #test_figma_reader()
-
 
 
 

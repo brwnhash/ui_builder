@@ -1,14 +1,22 @@
 
 
+from abc import ABC, abstractmethod
 class RECT_ORIENT():
     ROW=0
     COLUMN=1
     BOTH=2
     NONE=3
 
+class ElmType:
+    RECTANGLE="RECTANGLE"
+    GROUP="GROUP"
+    COMPONENT="COMPONENT"
+    INSTANCE="INSTANCE"
+    LINE="LINE"
+    ELLIPSE="ELLIPSE"
+    FRAME="FRAME"
 
-
-class Node(object):
+class RectNode(ABC):
     def __init__(self,max_width,max_height,min_left,min_top,width,height,left,top,name,uid,parent,shape_type,x_offset,y_offset):
         """
         min_left and min_top : when box is out of bounding limits like scrolls
@@ -17,6 +25,7 @@ class Node(object):
         Nodes have relative info w.r.t parent.
 
         """
+        self.root_type=ElmType.RECTANGLE
         if width:
             self.width = width
             self.height = height
@@ -33,7 +42,7 @@ class Node(object):
         self.parent=parent 
         self.children=[]
         self.name=name
-        self.shape_type=shape_type
+        self.type=shape_type
         self.uid=str(uid)
         self.min_left=min_left-x_offset
         self.min_top=min_top-y_offset
@@ -48,6 +57,17 @@ class Node(object):
             if child.uid==self.uid:
                 return True
         return False
+
+    @staticmethod
+    def hasParent(first_node,other_node):
+        """
+        check if first node has other node as recursive parent
+        """
+        if first_node.parent==other_node:
+            return True
+        if first_node.parent!=None:
+            return RectNode.hasParent(first_node.parent,other_node)
+        
 
     def addProps(self,props,key):
         """
@@ -73,8 +93,11 @@ class Node(object):
         min_left=(self.min_left-self.parent.left)/self.parent.width
         min_top=(self.min_top-self.parent.top)/self.parent.height
 
-        return Node(max_width,max_height,min_left,min_top,width,height,left,top,self.name,self.uid\
-                ,self.parent,self.shape_type,0,0)
+        return RectNode(max_width,max_height,min_left,min_top,width,height,left,top,self.name,self.uid\
+                ,self.parent,self.type,0,0)
+
+    def getArea(self):
+        pass
 
 
         
@@ -109,9 +132,10 @@ def getYMargins(rects):
     margins.append(last_diff)
     return margins
 
-class Rectangle(Node):
+class Rectangle(RectNode):
     def __init__(self,props,parent=None,type='RECTANGLE'):
-        Node.__init__(self,props['width'],props['height'],props['x'],props['y'],props['view_width'],\
+        
+        RectNode.__init__(self,props['width'],props['height'],props['x'],props['y'],props['view_width'],\
                         props['view_height'],props['view_x'],props['view_y'],props['name'],\
                         props['uid'],parent,type,props['x_offset'],props['y_offset'])
     @staticmethod
@@ -185,7 +209,9 @@ class Rectangle(Node):
             return RECT_ORIENT.ROW if row else RECT_ORIENT.COLUMN
         return RECT_ORIENT.NONE
 
-           
+    @property
+    def area(self):
+        return self.width*self.height
 
     def abs_diff(self,other):
         return abs(self.left-other.left)+abs(self.right-other.right)
@@ -224,16 +250,8 @@ class Rectangle(Node):
         bottom_block=other if top_block==self else self
         height_in=True if (bottom_block.top>=top_block.top and  bottom_block.bottom<=top_block.bottom) else False
         return True if (width_in and height_in) else False
+    
 
-def isValidParentChildStructure(parent):
-    valid=True
-    for child in parent.children:
-        if not parent.contains(child):
-            valid=False
-    return valid
-
-def isRedundantChild():
-    pass
 
 
 class Frame(Rectangle):
@@ -241,7 +259,65 @@ class Frame(Rectangle):
         Rectangle.__init__(self,props,parent,type)
     
 class Component(Rectangle):
-    def __init__(self,props,parent=None,type='COMPONENT',parent_comp_id=None):
+    def __init__(self,props,parent=None,type='COMPONENT',comp_id=None):
         Rectangle.__init__(self,props,parent,type)
-        self.parent_comp_id=parent_comp_id
+        self.comp_id=comp_id
 
+class Line():
+    def __init__(self,props,parent,type='LINE'):
+        raise Exception('Line not implemented yet')
+    
+class Ellipse():
+    def __init__(self,props,parent,type='ELLIPSE'):
+        raise Exception('Ellipse not implemented yet')
+
+
+
+
+
+NODE_CLASS_MAPPING = {
+    ElmType.FRAME:Frame,
+    ElmType.RECTANGLE: Rectangle,
+    ElmType.GROUP: Component,
+    ElmType.COMPONENT: Component,
+    ElmType.INSTANCE: Component,
+    ElmType.LINE: Line,
+    ElmType.ELLIPSE: Ellipse
+
+}
+
+def isComponentType(elm):
+    if elm.type in [ElmType.GROUP,ElmType.COMPONENT,ElmType.INSTANCE,ElmType.FRAME]:
+        return True
+    return False
+
+
+def isValidParentChildStructure(parent):
+    valid=True
+    if not isinstance(parent,Rectangle):
+        return True
+    for child in parent.children:
+        if not isComponentType(child,Rectangle):
+            continue
+        if not parent.contains(child):
+            valid=False
+    return valid
+
+    
+
+def normalizeComponent(rect):
+    """
+    parent and child are of same type and same dimension merge them 
+
+    """
+    if not isComponentType(rect):
+        return rect
+    if len(rect.children)==1:
+        child=rect.children[0]
+        if isComponentType(child) and Rectangle.is_equal(rect,child):
+            rect.children=child.children
+        normalizeComponent(child)
+
+
+
+            
